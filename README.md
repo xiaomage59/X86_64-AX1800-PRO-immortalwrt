@@ -1,4 +1,4 @@
-# OpenWrt计划弃用opkg，全面采用apk。这是一个默认使用opkg的固件。
+# OpenWrt计划弃用opkg，全面采用apk。这是一个默认使用opkg的固件。集成istore商店。
 # OpenWRT-CI
 云编译OpenWRT固件
 
