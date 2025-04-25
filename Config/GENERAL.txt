@@ -207,8 +207,8 @@ CONFIG_PACKAGE_luci-app-navidrome=y
 #快速设置
 #CONFIG_PACKAGE_luci-app-quickstart=y
 #主题界面luci-theme-design
-CONFIG_PACKAGE_luci-theme-design=y
-CONFIG_PACKAGE_luci-app-design-config=y
+#CONFIG_PACKAGE_luci-theme-design=y
+#CONFIG_PACKAGE_luci-app-design-config=y
 #-------------------2025.04.04-测试------------------------------------------------#
 
 #-------------------2025.04.12-测试-----------------#
