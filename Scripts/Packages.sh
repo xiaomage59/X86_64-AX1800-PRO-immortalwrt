@@ -29,7 +29,7 @@ UPDATE_PACKAGE() {
 	done
 
 	# 克隆 GitHub 仓库
-	git clone --depth=1 --single-branch --branch $PKG_BRANCH "https://github.com/$PKG_REPO.git"
+	git clone --depth=10 --single-branch --branch $PKG_BRANCH "https://github.com/$PKG_REPO.git"
 
  	#--------以下原代码--------恢复时取消“##”（2个#）------#
 	### 处理克隆的仓库
@@ -45,7 +45,7 @@ UPDATE_PACKAGE() {
 	# 处理克隆的仓库
 	if [[ $PKG_SPECIAL == "pkg" ]]; then
   	  # 修改后的 find 命令：覆盖深层目录（如 relevance/filebrowser）
-  	  find ./$REPO_NAME/ -maxdepth 5 -type d -iname "*$PKG_NAME*" -prune -exec cp -rf {} ./ \;
+  	  find ./$REPO_NAME/ -maxdepth 10 -type d -iname "*$PKG_NAME*" -prune -exec cp -rf {} ./ \;
   	  rm -rf ./$REPO_NAME/
 	elif [[ $PKG_SPECIAL == "name" ]]; then
   	  # 原逻辑：直接重命名仓库目录（适用于插件与仓库同名的情况）
