@@ -153,9 +153,9 @@ UPDATE_PACKAGE "luci-app-aliyundrive-webdav" "messense/aliyundrive-webdav" "main
 UPDATE_PACKAGE "luci-app-navidrome" "tty228/luci-app-navidrome" "main"
 
 #luci-theme-design主题界面----OK
-UPDATE_PACKAGE "luci-theme-design" "emxiong/luci-theme-design" "master"
+#UPDATE_PACKAGE "luci-theme-design" "emxiong/luci-theme-design" "master"
 #luci-app-design-config主题配置----OK
-UPDATE_PACKAGE "luci-app-design-config" "kenzok78/luci-app-design-config" "main"
+#UPDATE_PACKAGE "luci-app-design-config" "kenzok78/luci-app-design-config" "main"
 
 #luci-app-quickstart
 #UPDATE_PACKAGE "luci-app-quickstart" "animegasan/luci-app-quickstart" "main"
