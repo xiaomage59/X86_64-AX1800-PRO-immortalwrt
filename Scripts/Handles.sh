@@ -2,8 +2,7 @@
 
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
-# 以下处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26
-
+# -----------------以上处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26-------------#
 OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/" # 临时存放 .lmo 文件的目录
 
 # 创建输出目录
@@ -102,7 +101,7 @@ convert_po_to_lmo
 echo "Generated .lmo files are located in: $OUTPUT_PATH"
 echo "Remember to include the .lmo files in the install section of the Makefile for each plugin."
 
-# 以上处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26
+# -----------------以上处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26-------------#
 
 #预置HomeProxy数据
 if [ -d *"homeproxy"* ]; then
@@ -151,7 +150,7 @@ if [ -f "$NSS_PBUF" ]; then
 fi
 
 #移除Shadowsocks组件
-PW_FILE=$(find ./ -maxdepth 3 -type f -wholename "*/luci-app-passwall/Makefile")
+PW_FILE=$(find ./ -maxdepth=3 -type f -wholename "*/luci-app-passwall/Makefile")
 if [ -f "$PW_FILE" ]; then
 	sed -i '/config PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev/,/x86_64/d' $PW_FILE
 	sed -i '/config PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR/,/default n/d' $PW_FILE
@@ -160,7 +159,7 @@ if [ -f "$PW_FILE" ]; then
 	cd $PKG_PATH && echo "passwall has been fixed!"
 fi
 
-SP_FILE=$(find ./ -maxdepth 3 -type f -wholename "*/luci-app-ssr-plus/Makefile")
+SP_FILE=$(find ./ -maxdepth=3 -type f -wholename "*/luci-app-ssr-plus/Makefile")
 if [ -f "$SP_FILE" ]; then
 	sed -i '/default PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev/,/libev/d' $SP_FILE
 	sed -i '/config PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR/,/x86_64/d' $SP_FILE
@@ -170,7 +169,7 @@ if [ -f "$SP_FILE" ]; then
 fi
 
 #修复TailScale配置文件冲突
-TS_FILE=$(find ../feeds/packages/ -maxdepth 3 -type f -wholename "*/tailscale/Makefile")
+TS_FILE=$(find ../feeds/packages/ -maxdepth=3 -type f -wholename "*/tailscale/Makefile")
 if [ -f "$TS_FILE" ]; then
 	sed -i '/\/files/d' $TS_FILE
 
@@ -178,7 +177,7 @@ if [ -f "$TS_FILE" ]; then
 fi
 
 #修复Coremark编译失败
-CM_FILE=$(find ../feeds/packages/ -maxdepth 3 -type f -wholename "*/coremark/Makefile")
+CM_FILE=$(find ../feeds/packages/ -maxdepth=3 -type f -wholename "*/coremark/Makefile")
 if [ -f "$CM_FILE" ]; then
 	sed -i 's/mkdir/mkdir -p/g' $CM_FILE
 
