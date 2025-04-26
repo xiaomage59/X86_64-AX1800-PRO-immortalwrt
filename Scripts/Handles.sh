@@ -5,16 +5,28 @@ PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 # 以下处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26
 
 convert_po_to_lmo() {
-  echo "Starting .po to .lmo conversion..."
-  
-  # 查找所有可能的 .po 文件并进行转换
+  echo "Starting .po to .lmo conversion for zh-cn only..."
+
+  # 查找所有 .po 文件并进行转换
   find "$PKG_PATH" -type f -name "*.po" | while read -r po_file; do
     # 获取 .po 文件的基础名称（不包含扩展名）
     po_basename=$(basename "$po_file" .po)
     
+    # 根据文件名判断语种后缀
+    if [[ "$po_file" =~ zh_CN|zh-cn ]]; then
+      lmo_suffix="zh-cn"
+    elif [[ "$po_file" =~ zh_Hant ]]; then
+      continue # 跳过非 zh-cn 的语言包
+    elif [[ "$po_file" =~ zh_Hans ]]; then
+      lmo_suffix="zh-cn"
+    else
+      # 默认语种为 zh-cn
+      lmo_suffix="zh-cn"
+    fi
+
     # 设置生成的 .lmo 文件路径
-    lmo_file="/usr/lib/lua/luci/i18n/$po_basename.zh-cn.lmo"
-    
+    lmo_file="/usr/lib/lua/luci/i18n/${po_basename}.${lmo_suffix}.lmo"
+
     # 检查 .lmo 文件是否已存在，避免覆盖
     if [ ! -f "$lmo_file" ]; then
       echo "Converting $po_file to $lmo_file..."
@@ -23,8 +35,8 @@ convert_po_to_lmo() {
       echo "Skipping $po_file, $lmo_file already exists."
     fi
   done
-  
-  echo "All .po files have been processed."
+
+  echo "All zh-cn .po files have been processed."
 }
 
 # 调用语言包处理函数
