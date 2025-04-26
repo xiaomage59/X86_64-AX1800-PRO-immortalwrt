@@ -44,11 +44,25 @@ needs_conversion() {
   fi
 }
 
+# 检查是否需要安装 .lmo 文件
+needs_install() {
+  local lmo_file="$1"
+  local install_path="$2"
+  local lmo_filename=$(basename "$lmo_file")
+
+  # 如果目标路径中不存在相同的 .lmo 文件，或者生成的 .lmo 文件更新，则需要安装
+  if [ ! -f "$install_path/$lmo_filename" ] || [ "$lmo_file" -nt "$install_path/$lmo_filename" ]; then
+    return 0  # 需要安装
+  else
+    return 1  # 不需要安装
+  fi
+}
+
 # 递归查找所有 .po 文件并转换为 .zh-cn.lmo 文件
 convert_po_to_lmo() {
   echo "Starting selective .po to .lmo conversion for zh-cn..."
 
-  # 遍历所有插件目录，递归查找 .po 文件
+  # 使用兼容逻辑代替 -maxdepth
   find "$PKG_PATH" -type f -name "*.po" | while read -r po_file; do
     # 获取 .po 文件的基础名称和路径
     po_basename=$(basename "$po_file" .po)
@@ -94,22 +108,16 @@ find "$OUTPUT_PATH" -type f -name "*.lmo" | while read -r lmo_file; do
   install_path="$PKG_PATH/$plugin_name/root/usr/lib/lua/luci/i18n/"
   mkdir -p "$install_path"
 
-  # 检查目标路径是否已存在相同的 .lmo 文件
-  if [ -f "$install_path/$(basename "$lmo_file")" ]; then
-    echo "Skipping $lmo_file, already exists in $install_path"
-    continue
+  # 检查目标路径是否需要安装
+  if needs_install "$lmo_file" "$install_path"; then
+    echo "Installing $lmo_file to $install_path..."
+    cp "$lmo_file" "$install_path"
+  else
+    echo "Skipping $lmo_file, already up-to-date in $install_path"
   fi
-
-  # 复制 .lmo 文件到目标路径
-  echo "Installing $lmo_file to $install_path..."
-  cp "$lmo_file" "$install_path"
 done
 
 echo "All .lmo files have been installed to their respective plugin directories."
-
-# 输出生成的 .lmo 文件路径
-echo "Generated .lmo files are located in: $OUTPUT_PATH"
-echo "Remember to include the .lmo files in the install section of the Makefile for each plugin."
 
 # -----------------以上处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26-------------#
 
