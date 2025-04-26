@@ -85,6 +85,28 @@ convert_po_to_lmo() {
 # 调用语言包处理函数
 convert_po_to_lmo
 
+# 遍历所有生成的 .lmo 文件并复制到插件目标路径
+find "$OUTPUT_PATH" -type f -name "*.lmo" | while read -r lmo_file; do
+  # 获取插件名称（假设插件名是文件名的一部分）
+  plugin_name=$(basename "$lmo_file" .zh-cn.lmo)
+
+  # 确定目标路径
+  install_path="$PKG_PATH/$plugin_name/root/usr/lib/lua/luci/i18n/"
+  mkdir -p "$install_path"
+
+  # 检查目标路径是否已存在相同的 .lmo 文件
+  if [ -f "$install_path/$(basename "$lmo_file")" ]; then
+    echo "Skipping $lmo_file, already exists in $install_path"
+    continue
+  fi
+
+  # 复制 .lmo 文件到目标路径
+  echo "Installing $lmo_file to $install_path..."
+  cp "$lmo_file" "$install_path"
+done
+
+echo "All .lmo files have been installed to their respective plugin directories."
+
 # 输出生成的 .lmo 文件路径
 echo "Generated .lmo files are located in: $OUTPUT_PATH"
 echo "Remember to include the .lmo files in the install section of the Makefile for each plugin."
