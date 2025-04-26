@@ -14,7 +14,7 @@ https://github.com/VIKINGYFY/immortalwrt.git
 
 固件信息里的时间为编译开始的时间，方便核对上游源码提交时间。
 
-MEDIATEK系列（不编译）、QUALCOMMAX系列（仅编译亚瑟-wifi、雅典娜-wifi）、ROCKCHIP系列（不编译）、X86系列。
+MEDIATEK系列（不编译）、QUALCOMMAX系列（仅编译亚瑟RE-SS-01-wifi、雅典娜RE-CS-02-wifi）、ROCKCHIP系列（不编译）、X86系列。
 
 # 目录简要说明：
 
