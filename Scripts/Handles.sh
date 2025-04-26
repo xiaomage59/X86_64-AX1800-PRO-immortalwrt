@@ -4,6 +4,13 @@ PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
 # 以下处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26
 
+# 检查 po2lmo 工具是否可用
+if ! command -v po2lmo &> /dev/null; then
+  echo "Error: po2lmo tool is not installed or not available in PATH."
+  exit 1
+fi
+
+# 递归查找所有 .po 文件并转换为 .zh-cn.lmo 文件
 convert_po_to_lmo() {
   echo "Starting selective .po to .lmo conversion for zh-cn..."
 
@@ -41,6 +48,8 @@ convert_po_to_lmo() {
       # 检查转换是否成功
       if [ $? -ne 0 ]; then
         echo "Warning: Failed to convert $po_file to $lmo_file."
+        echo "Inspecting file for potential issues..."
+        head -n 10 "$po_file" # 输出文件前几行，帮助调试
       fi
     else
       echo "Skipping $po_file, $lmo_file already exists."
