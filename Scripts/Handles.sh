@@ -3,6 +3,7 @@
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
 # -----------------以上处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26-------------#
+
 OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/" # 临时存放 .lmo 文件的目录
 
 # 创建输出目录
@@ -19,7 +20,9 @@ is_standard_openwrt_structure() {
   local po_file="$1"
   local po_dirname
   po_dirname=$(dirname "$po_file")
-  if [[ "$po_dirname" =~ /po/(zh-cn|zh_Hans|zh_Hant|en)$ ]]; then
+  
+  # 检查是否为标准路径结构
+  if echo "$po_dirname" | grep -qE "/po/(zh-cn|zh_Hans|zh_Hant|en)$"; then
     return 0 # 是标准结构
   else
     return 1 # 非标准结构
