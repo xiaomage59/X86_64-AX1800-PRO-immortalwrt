@@ -4,11 +4,42 @@ PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
 # 以下处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26
 
+OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/" # 临时存放 .lmo 文件的目录
+
+# 创建输出目录
+mkdir -p "$OUTPUT_PATH"
+
 # 检查 po2lmo 工具是否可用
 if ! command -v po2lmo &> /dev/null; then
   echo "Error: po2lmo tool is not installed or not available in PATH."
   exit 1
 fi
+
+# 检查是否为标准 OpenWrt 语言包结构
+is_standard_openwrt_structure() {
+  local po_file="$1"
+  local po_dirname
+  po_dirname=$(dirname "$po_file")
+  if [[ "$po_dirname" =~ /po/(zh-cn|zh_Hans|zh_Hant|en)$ ]]; then
+    return 0 # 是标准结构
+  else
+    return 1 # 非标准结构
+  fi
+}
+
+# 获取语言包文件的语种
+get_language_suffix() {
+  local po_file="$1"
+  if [[ "$po_file" =~ zh_CN|zh-cn ]]; then
+    echo "zh-cn"
+  elif [[ "$po_file" =~ zh_Hans ]]; then
+    echo "zh-cn"
+  elif [[ "$po_file" =~ zh_Hant|en ]]; then
+    echo "skip" # 非中文，直接跳过
+  else
+    echo "zh-cn" # 无明确语种标识，默认为 zh-cn
+  fi
+}
 
 # 递归查找所有 .po 文件并转换为 .zh-cn.lmo 文件
 convert_po_to_lmo() {
@@ -20,39 +51,44 @@ convert_po_to_lmo() {
     po_basename=$(basename "$po_file" .po)
     po_dirname=$(dirname "$po_file")
 
-    # 检查是否是 OpenWrt 标准结构
-    if [[ "$po_file" =~ /po/zh-cn/ ]]; then
-      echo "Skipping standard OpenWrt structure: $po_file"
+    # 检查是否需要跳过非中文语言包
+    lmo_suffix=$(get_language_suffix "$po_file")
+    if [[ "$lmo_suffix" == "skip" ]]; then
+      echo "Skipping non-zh-cn language file: $po_file"
       continue
     fi
 
-    # 确定语种后缀
-    if [[ "$po_file" =~ zh_CN|zh-cn ]]; then
-      lmo_suffix="zh-cn"
-    elif [[ "$po_file" =~ zh_Hant|zh-hant|en ]]; then
-      echo "Skipping non-zh-cn language file: $po_file"
-      continue
-    else
-      # 无语种标识的情况，按 zh-cn 处理
+    # 检查是否为标准 OpenWrt 结构
+    if is_standard_openwrt_structure "$po_file"; then
+      if [[ "$po_basename" =~ ^(zh-cn|zh_Hans|zh_Hant|en)$ ]]; then
+        echo "Skipping standard OpenWrt structure: $po_file"
+        continue
+      fi
+    fi
+
+    # 如果文件名无语种标识，但上一级目录标识为语言
+    if [[ ! "$po_basename" =~ ^(zh-cn|zh_Hans|zh_Hant|en)$ && "$po_dirname" =~ /zh-cn$ ]]; then
       lmo_suffix="zh-cn"
     fi
 
     # 设置生成的 .lmo 文件路径
-    lmo_file="/usr/lib/lua/luci/i18n/${po_basename}.${lmo_suffix}.lmo"
+    lmo_file="${OUTPUT_PATH}${po_basename}.${lmo_suffix}.lmo"
 
-    # 检查 .lmo 文件是否已存在，避免覆盖
-    if [ ! -f "$lmo_file" ]; then
-      echo "Converting $po_file to $lmo_file..."
-      po2lmo "$po_file" "$lmo_file"
-      
-      # 检查转换是否成功
-      if [ $? -ne 0 ]; then
-        echo "Warning: Failed to convert $po_file to $lmo_file."
-        echo "Inspecting file for potential issues..."
-        head -n 10 "$po_file" # 输出文件前几行，帮助调试
-      fi
-    else
+    # 检查目标文件是否已存在，避免覆盖
+    if [ -f "$lmo_file" ]; then
       echo "Skipping $po_file, $lmo_file already exists."
+      continue
+    fi
+
+    # 转换 .po 到 .lmo
+    echo "Converting $po_file to $lmo_file..."
+    po2lmo "$po_file" "$lmo_file"
+
+    # 检查转换是否成功
+    if [ $? -ne 0 ]; then
+      echo "Warning: Failed to convert $po_file to $lmo_file."
+      echo "Inspecting file for potential issues..."
+      head -n 10 "$po_file" # 输出文件前几行，帮助调试
     fi
   done
 
@@ -61,6 +97,10 @@ convert_po_to_lmo() {
 
 # 调用语言包处理函数
 convert_po_to_lmo
+
+# 输出生成的 .lmo 文件路径
+echo "Generated .lmo files are located in: $OUTPUT_PATH"
+echo "Remember to include the .lmo files in the install section of the Makefile for each plugin."
 
 # 以上处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26
 
