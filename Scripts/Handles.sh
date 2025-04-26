@@ -3,6 +3,7 @@
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
 # 以下处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26
+
 convert_po_to_lmo() {
   echo "Starting .po to .lmo conversion..."
   
@@ -14,9 +15,13 @@ convert_po_to_lmo() {
     # 设置生成的 .lmo 文件路径
     lmo_file="/usr/lib/lua/luci/i18n/$po_basename.zh-cn.lmo"
     
-    # 使用 po2lmo 工具进行转换
-    echo "Converting $po_file to $lmo_file..."
-    po2lmo "$po_file" "$lmo_file"
+    # 检查 .lmo 文件是否已存在，避免覆盖
+    if [ ! -f "$lmo_file" ]; then
+      echo "Converting $po_file to $lmo_file..."
+      po2lmo "$po_file" "$lmo_file"
+    else
+      echo "Skipping $po_file, $lmo_file already exists."
+    fi
   done
   
   echo "All .po files have been processed."
@@ -24,6 +29,7 @@ convert_po_to_lmo() {
 
 # 调用语言包处理函数
 convert_po_to_lmo
+
 # 以上处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26
 
 #预置HomeProxy数据
