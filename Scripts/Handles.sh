@@ -6,7 +6,7 @@ PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
 # Paths
 OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/"
-INSTALL_DIR="/usr/lib/lua/luci/i18n/"
+INSTALL_DIR_ROOT="/usr/lib/lua/luci/i18n/"
 
 # 创建输出目录
 mkdir -p "$OUTPUT_PATH"
@@ -44,32 +44,32 @@ needs_conversion() {
   fi
 }
 
-# 检查是否需要安装 .lmo 文件
-needs_install() {
-  local lmo_file="$1"
-  local install_path="$2"
-  local lmo_filename=$(basename "$lmo_file")
+# 检查目标路径中是否缺少语言包
+is_language_missing() {
+  local plugin_name="$1"
+  local lmo_basename="$2"
 
-  # 如果目标路径中不存在相同的 .lmo 文件，或者生成的 .lmo 文件更新，则需要安装
-  if [ ! -f "$install_path/$lmo_filename" ] || [ "$lmo_file" -nt "$install_path/$lmo_filename" ]; then
-    return 0  # 需要安装
+  # 检查目标路径中是否存在 .lmo 文件
+  if [ ! -f "$PKG_PATH/$plugin_name/root$INSTALL_DIR_ROOT/$lmo_basename" ]; then
+    return 0  # 语言包缺失
   else
-    return 1  # 不需要安装
+    return 1  # 语言包已存在
   fi
 }
 
-# 递归查找所有 .po 文件并转换为 .zh-cn.lmo 文件
+# 递归查找所有 .po 文件并按需转换为 .zh-cn.lmo 文件
 convert_po_to_lmo() {
   echo "Starting selective .po to .lmo conversion for zh-cn..."
 
-  # 使用兼容逻辑代替 -maxdepth
+  # 遍历插件目录中的所有 .po 文件
   find "$PKG_PATH" -type f -name "*.po" | while read -r po_file; do
-    # 获取 .po 文件的基础名称和路径
-    po_basename=$(basename "$po_file" .po)
-    po_dirname=$(dirname "$po_file")
+    # 获取插件名称
+    plugin_name=$(echo "$po_file" | awk -F/ '{print $(NF-3)}')
 
-    # 确定语言后缀
+    # 获取 .po 文件的基础名称和语言后缀
+    po_basename=$(basename "$po_file" .po)
     lmo_suffix=$(get_language_suffix "$po_file")
+
     if [[ "$lmo_suffix" == "skip" ]]; then
       echo "Skipping non-zh-cn language file: $po_file"
       continue
@@ -78,18 +78,23 @@ convert_po_to_lmo() {
     # 设置生成的 .lmo 文件路径
     lmo_file="${OUTPUT_PATH}${po_basename}.${lmo_suffix}.lmo"
 
-    # 检查目标 .lmo 文件是否需要更新
-    if needs_conversion "$po_file" "$lmo_file"; then
-      echo "Converting $po_file to $lmo_file..."
-      po2lmo "$po_file" "$lmo_file"
+    # 检查目标路径中是否缺少语言包
+    if is_language_missing "$plugin_name" "${po_basename}.${lmo_suffix}.lmo"; then
+      # 检查目标 .lmo 文件是否需要更新
+      if needs_conversion "$po_file" "$lmo_file"; then
+        echo "Converting $po_file to $lmo_file..."
+        po2lmo "$po_file" "$lmo_file"
 
-      # 检查转换是否成功
-      if [ $? -ne 0 ]; then
-        echo "Warning: Failed to convert $po_file to $lmo_file."
-        continue
+        # 检查转换是否成功
+        if [ $? -ne 0 ]; then
+          echo "Warning: Failed to convert $po_file to $lmo_file."
+          continue
+        fi
+      else
+        echo "Skipping $po_file, target .lmo file is up-to-date: $lmo_file"
       fi
     else
-      echo "Skipping $po_file, target .lmo file is up-to-date: $lmo_file"
+      echo "Skipping $po_file, language package already exists for $plugin_name"
     fi
   done
 
@@ -99,15 +104,15 @@ convert_po_to_lmo() {
 # 遍历所有生成的 .lmo 文件并复制到插件目标路径
 install_lmo_files() {
   find "$OUTPUT_PATH" -type f -name "*.lmo" | while read -r lmo_file; do
-    # 获取插件名称（假设插件名是文件名的一部分）
+    # 获取插件名称
     plugin_name=$(basename "$lmo_file" .zh-cn.lmo)
 
     # 确定目标路径
-    install_path="$PKG_PATH/$plugin_name/root/usr/lib/lua/luci/i18n/"
+    install_path="$PKG_PATH/$plugin_name/root$INSTALL_DIR_ROOT"
     mkdir -p "$install_path"
 
     # 检查目标路径是否需要安装
-    if needs_install "$lmo_file" "$install_path"; then
+    if [ ! -f "$install_path/$(basename "$lmo_file")" ] || [ "$lmo_file" -nt "$install_path/$(basename "$lmo_file")" ]; then
       echo "Installing $lmo_file to $install_path..."
       cp "$lmo_file" "$install_path"
     else
