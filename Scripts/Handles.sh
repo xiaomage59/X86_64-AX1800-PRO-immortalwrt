@@ -31,19 +31,6 @@ get_language_suffix() {
   fi
 }
 
-# 检查是否需要转换 .po 文件
-needs_conversion() {
-  local po_file="$1"
-  local lmo_file="$2"
-
-  # 如果目标 .lmo 文件不存在，或者比 .po 文件旧，则需要转换
-  if [ ! -f "$lmo_file" ] || [ "$po_file" -nt "$lmo_file" ]; then
-    return 0  # 需要转换
-  else
-    return 1  # 不需要转换
-  fi
-}
-
 # 检查目标路径中是否缺少语言包
 is_language_missing() {
   local plugin_name="$1"
@@ -57,8 +44,22 @@ is_language_missing() {
   fi
 }
 
-# 递归查找所有 .po 文件并按需转换为 .zh-cn.lmo 文件
+# 按需转换 .po 文件为 .lmo 文件
 convert_po_to_lmo() {
+  local po_file="$1"
+  local lmo_file="$2"
+
+  echo "Converting $po_file to $lmo_file..."
+  po2lmo "$po_file" "$lmo_file"
+
+  # 检查转换是否成功
+  if [ $? -ne 0 ]; then
+    echo "Warning: Failed to convert $po_file to $lmo_file."
+  fi
+}
+
+# 遍历插件目录，动态检查并处理语言包
+process_language_packages() {
   echo "Starting selective .po to .lmo conversion for zh-cn..."
 
   # 遍历插件目录中的所有 .po 文件
@@ -80,19 +81,7 @@ convert_po_to_lmo() {
 
     # 检查目标路径中是否缺少语言包
     if is_language_missing "$plugin_name" "${po_basename}.${lmo_suffix}.lmo"; then
-      # 检查目标 .lmo 文件是否需要更新
-      if needs_conversion "$po_file" "$lmo_file"; then
-        echo "Converting $po_file to $lmo_file..."
-        po2lmo "$po_file" "$lmo_file"
-
-        # 检查转换是否成功
-        if [ $? -ne 0 ]; then
-          echo "Warning: Failed to convert $po_file to $lmo_file."
-          continue
-        fi
-      else
-        echo "Skipping $po_file, target .lmo file is up-to-date: $lmo_file"
-      fi
+      convert_po_to_lmo "$po_file" "$lmo_file"
     else
       echo "Skipping $po_file, language package already exists for $plugin_name"
     fi
@@ -101,8 +90,10 @@ convert_po_to_lmo() {
   echo "Selective .po to .lmo conversion completed."
 }
 
-# 遍历所有生成的 .lmo 文件并复制到插件目标路径
+# 遍历生成的 .lmo 文件并安装到目标路径
 install_lmo_files() {
+  echo "Installing .lmo files to target directories..."
+
   find "$OUTPUT_PATH" -type f -name "*.lmo" | while read -r lmo_file; do
     # 获取插件名称
     plugin_name=$(basename "$lmo_file" .zh-cn.lmo)
@@ -123,8 +114,8 @@ install_lmo_files() {
   echo "All .lmo files have been installed to their respective plugin directories."
 }
 
-# 调用语言包处理函数
-convert_po_to_lmo
+# 调用语言包处理函数（确保在所有插件编译完成后）
+process_language_packages
 install_lmo_files
 
 # -----------------以上处理所有 .po 文件并转换为 .lmo 文件-------2025.04.26-------------#
