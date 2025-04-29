@@ -183,7 +183,17 @@ jobs:
           cd ./wrt/
 
           make -j$(nproc) || make -j$(nproc) V=s
+          
+      #----------2025.04.29--新增语言包逻辑处理----------#    
+      - name: Post-Compile_Language-Packages
+        if: env.WRT_TEST != 'true'
+        run: |
+          cd ./wrt/package/
 
+          # 调用 handles_language.sh，仅处理语言包相关逻辑
+          $GITHUB_WORKSPACE/Scripts/Handles_language.sh 
+      #----------2025.04.29--新增语言包逻辑处理----------# 
+      
       - name: Machine Information
         run: |
           cd ./wrt/
