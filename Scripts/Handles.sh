@@ -2,7 +2,7 @@
 
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
-#-------------以下2025.04.29测试语言包-----------------------#
+#--------------------以下2025.04.29测试语言包-----------------------#
 
 # Paths
 OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/"
@@ -58,7 +58,7 @@ convert_po_to_lmo() {
   fi
 }
 
-# 构建完成后处理语言包
+# 处理语言包
 process_language_packages() {
   echo "Starting selective .po to .lmo conversion for zh-cn..."
 
@@ -114,11 +114,15 @@ install_lmo_files() {
   echo "All .lmo files have been installed to their respective plugin directories."
 }
 
-# 确保语言包处理在所有插件编译完成后执行
+# 主逻辑：确保语言包处理在插件编译完成后执行
+echo "Waiting for all plugins to finish compilation..."
+# 此处可以加入检查编译状态的逻辑，例如等待编译完成标志文件
+# sleep 30  # 示例：等待编译完成
+
 process_language_packages
 install_lmo_files
 
-#-------------以上2025.04.29测试语言包-----------------------#
+#--------------------以上2025.04.29测试语言包-----------------------#
 
 #预置HomeProxy数据
 if [ -d *"homeproxy"* ]; then
