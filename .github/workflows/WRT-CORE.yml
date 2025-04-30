@@ -185,23 +185,23 @@ jobs:
           make -j$(nproc) || make -j$(nproc) V=s
           
       #----------2025.04.29--新增语言包逻辑处理----------#    
-      - name: Debug Check Handles_language.sh Exists
+      - name: Debug Check handles_language.sh Exists
         run: |
-          ls -l ./wrt/package/
+          ls -l $GITHUB_WORKSPACE/Scripts/
 
-      - name: Ensure Handles_language.sh is Copied
+      - name: Ensure handles_language.sh is Copied
         run: |
-          cp $GITHUB_WORKSPACE/Scripts/Handles_language.sh ./wrt/package/
+          cp $GITHUB_WORKSPACE/Scripts/handles_language.sh ./wrt/package/
 
-      - name: Set Permissions for Handles_language.sh
+      - name: Set Permissions for handles_language.sh
         run: |
-          chmod +x ./wrt/package/Handles_language.sh
+          chmod +x ./wrt/package/handles_language.sh
 
       - name: Post-Compile Process Language Packages
         if: env.WRT_TEST != 'true'
         run: |
           cd ./wrt/package/
-          ./Handles_language.sh
+          ./handles_language.sh
       #----------2025.04.29--新增语言包逻辑处理----------# 
       
       - name: Machine Information
