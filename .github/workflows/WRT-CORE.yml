@@ -201,6 +201,10 @@ jobs:
         run: |
           echo "WRT_LIST=$(find ./wrt/bin/targets/ -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV
 
+      - name: Debug Display Plugin List
+        run: |
+          echo "Plugins included in firmware: $WRT_LIST"
+
       - name: Post-Compile Process Language Packages
         if: env.WRT_TEST != 'true'
         run: |
