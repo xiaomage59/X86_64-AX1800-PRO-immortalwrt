@@ -17,6 +17,9 @@ if ! command -v po2lmo &> /dev/null; then
   exit 1
 fi
 
+# 从环境变量中获取插件列表
+PLUGIN_LIST=$(echo "$WRT_LIST" | tr ' ' '\n')
+
 # 获取语言包文件的语种
 get_language_suffix() {
   local po_file="$1"
@@ -62,28 +65,35 @@ convert_po_to_lmo() {
 process_language_packages() {
   echo "Processing .po files to .lmo for zh-cn..."
 
-  find "$PKG_PATH" -type f -name "*.po" | while read -r po_file; do
-    # 获取插件名称
-    plugin_name=$(echo "$po_file" | awk -F/ '{print $(NF-3)}')
-
-    # 获取 .po 文件的基础名称和语言后缀
-    po_basename=$(basename "$po_file" .po)
-    lmo_suffix=$(get_language_suffix "$po_file")
-
-    if [[ "$lmo_suffix" == "skip" ]]; then
-      echo "Skipping non-zh-cn language file: $po_file"
+  # 遍历插件列表
+  for plugin_name in $PLUGIN_LIST; do
+    plugin_path=$(find "$PKG_PATH" -type d -name "$plugin_name" -print -quit)
+    if [ -z "$plugin_path" ]; then
+      echo "Plugin $plugin_name not found in package directory. Skipping..."
       continue
     fi
 
-    # 设置生成的 .lmo 文件路径
-    lmo_file="${OUTPUT_PATH}${po_basename}.${lmo_suffix}.lmo"
+    # 查找插件中的 .po 文件
+    find "$plugin_path" -type f -name "*.po" | while read -r po_file; do
+      # 获取 .po 文件的基础名称和语言后缀
+      po_basename=$(basename "$po_file" .po)
+      lmo_suffix=$(get_language_suffix "$po_file")
 
-    # 检查目标路径中是否缺少语言包
-    if is_language_missing "$plugin_name" "${po_basename}.${lmo_suffix}.lmo"; then
-      convert_po_to_lmo "$po_file" "$lmo_file"
-    else
-      echo "Skipping $po_file, language package already exists for $plugin_name"
-    fi
+      if [[ "$lmo_suffix" == "skip" ]]; then
+        echo "Skipping non-zh-cn language file: $po_file"
+        continue
+      fi
+
+      # 设置生成的 .lmo 文件路径
+      lmo_file="${OUTPUT_PATH}${po_basename}.${lmo_suffix}.lmo"
+
+      # 检查目标路径中是否缺少语言包
+      if is_language_missing "$plugin_name" "${po_basename}.${lmo_suffix}.lmo"; then
+        convert_po_to_lmo "$po_file" "$lmo_file"
+      else
+        echo "Skipping $po_file, language package already exists for $plugin_name"
+      fi
+    done
   done
 
   echo "Selective .po to .lmo conversion completed."
