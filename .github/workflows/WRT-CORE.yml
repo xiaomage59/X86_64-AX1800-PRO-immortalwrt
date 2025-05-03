@@ -197,11 +197,15 @@ jobs:
         run: |
           chmod +x ./wrt/package/handles_language.sh
 
+      - name: Set Plugin List to Environment
+        run: |
+          echo "WRT_LIST=$(find ./wrt/bin/targets/ -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV
+
       - name: Post-Compile Process Language Packages
         if: env.WRT_TEST != 'true'
         run: |
           cd ./wrt/package/
-          ./handles_language.sh
+          $GITHUB_WORKSPACE/Scripts/Handles_language.sh
       #----------2025.04.29--新增语言包逻辑处理----------# 
       
       - name: Machine Information
