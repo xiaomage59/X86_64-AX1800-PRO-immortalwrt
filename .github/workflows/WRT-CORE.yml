@@ -205,7 +205,7 @@ jobs:
         if: env.WRT_TEST != 'true'
         run: |
           cd ./wrt/package/
-          $GITHUB_WORKSPACE/Scripts/Handles_language.sh
+          $GITHUB_WORKSPACE/Scripts/handles_language.sh
       #----------2025.04.29--新增语言包逻辑处理----------# 
       
       - name: Machine Information
