@@ -6,7 +6,8 @@ echo "Starting selective .po to .lmo conversion for zh-cn..."
 # Paths
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/"
-INSTALL_DIR_ROOT="/usr/lib/lua/luci/i18n/"
+INSTALL_DIR="/usr/lib/lua/luci/i18n/"
+ROM_DIR="/rom/usr/lib/lua/luci/i18n/"
 
 # 创建输出目录
 mkdir -p "$OUTPUT_PATH"
@@ -34,13 +35,13 @@ get_language_suffix() {
   fi
 }
 
-# 检查插件是否已有语言包
+# 检查插件在目标路径中是否已有语言包
 is_language_installed() {
   local plugin_name="$1"
   local lmo_basename="$2"
 
-  # 检查目标路径中是否存在 .lmo 文件
-  if [ -f "$PKG_PATH/$plugin_name/root$INSTALL_DIR_ROOT/$lmo_basename" ]; then
+  # 检查 /usr 和 /rom 目录
+  if [ -f "$INSTALL_DIR/$lmo_basename" ] || [ -f "$ROM_DIR/$lmo_basename" ]; then
     return 0  # 语言包已存在
   else
     return 1  # 语言包缺失
@@ -55,7 +56,6 @@ convert_po_to_lmo() {
   echo "Converting $po_file to $lmo_file..."
   po2lmo "$po_file" "$lmo_file"
 
-  # 检查转换是否成功
   if [ $? -ne 0 ]; then
     echo "Warning: Failed to convert $po_file to $lmo_file."
   fi
@@ -84,12 +84,12 @@ process_language_packages() {
         continue
       fi
 
-      # 设置生成的 .lmo 文件路径
-      lmo_file="${OUTPUT_PATH}${po_basename}.${lmo_suffix}.lmo"
+      # 目标 .lmo 文件名称
+      lmo_file="${po_basename}.${lmo_suffix}.lmo"
 
       # 检查目标路径中是否缺少语言包
-      if ! is_language_installed "$plugin_name" "${po_basename}.${lmo_suffix}.lmo"; then
-        convert_po_to_lmo "$po_file" "$lmo_file"
+      if ! is_language_installed "$plugin_name" "$lmo_file"; then
+        convert_po_to_lmo "$po_file" "$OUTPUT_PATH/$lmo_file"
       else
         echo "Skipping $po_file, language package already exists for $plugin_name"
       fi
@@ -104,25 +104,35 @@ install_lmo_files() {
   echo "Installing .lmo files to target directories..."
 
   find "$OUTPUT_PATH" -type f -name "*.lmo" | while read -r lmo_file; do
-    # 获取插件名称
-    plugin_name=$(basename "$lmo_file" .zh-cn.lmo)
-
-    # 确定目标路径
-    install_path="$PKG_PATH/$plugin_name/root$INSTALL_DIR_ROOT"
-    mkdir -p "$install_path"
-
     # 检查目标路径是否需要安装
-    if [ ! -f "$install_path/$(basename "$lmo_file")" ] || [ "$lmo_file" -nt "$install_path/$(basename "$lmo_file")" ]; then
-      echo "Installing $lmo_file to $install_path..."
-      cp "$lmo_file" "$install_path"
+    if [ ! -f "$INSTALL_DIR/$(basename "$lmo_file")" ] || [ "$lmo_file" -nt "$INSTALL_DIR/$(basename "$lmo_file")" ]; then
+      echo "Installing $lmo_file to $INSTALL_DIR..."
+      cp "$lmo_file" "$INSTALL_DIR"
     else
-      echo "Skipping $lmo_file, already up-to-date in $install_path"
+      echo "Skipping $lmo_file, already up-to-date in $INSTALL_DIR"
     fi
   done
 
   echo "All .lmo files have been installed to their respective plugin directories."
 }
 
+# 验证语言包是否正确安装
+validate_language_packages() {
+  echo "Validating installed language packages..."
+
+  for plugin_name in $PLUGIN_LIST; do
+    lmo_file="${plugin_name}.zh-cn.lmo"
+    if [ ! -f "$INSTALL_DIR/$lmo_file" ] && [ ! -f "$ROM_DIR/$lmo_file" ]; then
+      echo "Warning: Language package for $plugin_name is missing."
+    else
+      echo "Language package for $plugin_name is successfully installed."
+    fi
+  done
+
+  echo "Validation completed."
+}
+
 # 主逻辑：语言包处理
 process_language_packages
 install_lmo_files
+validate_language_packages
