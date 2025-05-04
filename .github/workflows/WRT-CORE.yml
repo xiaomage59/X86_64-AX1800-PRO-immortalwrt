@@ -210,6 +210,14 @@ jobs:
         run: |
           cd ./wrt/package/
           $GITHUB_WORKSPACE/Scripts/handles_language.sh
+
+      - name: Generate Language Package Log
+        run: |
+          if [ -f $GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/language_package_log.txt ]; then
+          cat $GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/language_package_log.txt
+          else
+          echo "No language package log found."
+          fi
       #----------2025.04.29--新增语言包逻辑处理----------# 
       
       - name: Machine Information
