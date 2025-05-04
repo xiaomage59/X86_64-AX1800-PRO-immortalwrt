@@ -1,4 +1,4 @@
-#云编译公用核心
+# 云编译公用核心
 name: WRT-CORE
 
 on:
@@ -97,7 +97,7 @@ jobs:
 
           cd ./wrt/ && echo "WRT_HASH=$(git log -1 --pretty=format:'%h')" >> $GITHUB_ENV
 
-          # 修改软件源为IPK（新增部分）
+          # 修改软件源为IPK
           sed -i 's/.apk/.ipk/g' feeds.conf.default
 
           # GitHub Action 移除国内下载源
@@ -121,30 +121,6 @@ jobs:
             ./wrt/.ccache
             ./wrt/staging_dir/host*
             ./wrt/staging_dir/tool*
-
-      - name: Update Caches
-        if: env.WRT_TEST != 'true'
-        run: |
-          if [ -d "./wrt/staging_dir" ]; then
-            find "./wrt/staging_dir" -type d -name "stamp" -not -path "*target*" | while read -r DIR; do
-              find "$DIR" -type f -exec touch {} +
-            done
-
-            mkdir -p ./wrt/tmp && echo "1" > ./wrt/tmp/.build
-
-            echo "toolchain skiped done!"
-          else
-            echo "caches missed!"
-          fi
-
-          if ${{steps.check-cache.outputs.cache-hit != 'true'}}; then
-            CACHE_LIST=$(gh cache list --key "$WRT_CONFIG-$WRT_VER" | cut -f 1)
-            for CACHE_KEY in $CACHE_LIST; do
-              gh cache delete $CACHE_KEY
-            done
-
-            echo "caches cleanup done!"
-          fi
 
       - name: Update Feeds
         run: |
@@ -177,37 +153,38 @@ jobs:
 
           make download -j$(nproc)
 
-      - name: Compile Firmware
-        if: env.WRT_TEST != 'true'
-        run: |
-          cd ./wrt/
-
-          make -j$(nproc) || make -j$(nproc) V=s
-          
-      #----------2025.04.29--新增语言包逻辑处理----------#    
       - name: Set Plugin List to Environment
+        # 保持V10逻辑：在Compile Firmware之前生成插件列表
         run: |
           echo "WRT_LIST=$(find ./wrt/bin/targets/ -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV
 
       - name: Debug Display Plugin List
+        # 保持V10逻辑：在Compile Firmware之前调试输出插件列表
         run: |
           echo "Plugins included in firmware: $WRT_LIST"
 
+      - name: Compile Firmware
+        if: env.WRT_TEST != 'true'
+        run: |
+          cd ./wrt/
+          make -j$(nproc) || make -j1 V=sc
+
       - name: Post-Compile Process Language Packages
+        # 修正后的步骤：调用 Handles_language.sh 处理语言包
         if: env.WRT_TEST != 'true'
         run: |
           cd ./wrt/package/
           $GITHUB_WORKSPACE/Scripts/handles_language.sh
 
       - name: Generate Language Package Log
+        # 修正后的步骤：生成语言包日志
         run: |
           if [ -f $GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/language_package_log.txt ]; then
-          cat $GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/language_package_log.txt
+            cat $GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/language_package_log.txt
           else
-          echo "No language package log found."
+            echo "No language package log found."
           fi
-      #----------2025.04.29--新增语言包逻辑处理----------# 
-      
+
       - name: Machine Information
         run: |
           cd ./wrt/
