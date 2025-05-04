@@ -1,4 +1,4 @@
-# 云编译公用核心
+#云编译公用核心
 name: WRT-CORE
 
 on:
@@ -97,7 +97,7 @@ jobs:
 
           cd ./wrt/ && echo "WRT_HASH=$(git log -1 --pretty=format:'%h')" >> $GITHUB_ENV
 
-          # 修改软件源为IPK
+          # 修改软件源为IPK（新增部分）
           sed -i 's/.apk/.ipk/g' feeds.conf.default
 
           # GitHub Action 移除国内下载源
@@ -109,6 +109,42 @@ jobs:
       - name: Check Scripts
         run: |
           find ./ -maxdepth 3 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
+
+      - name: Check Caches
+        id: check-cache
+        if: env.WRT_TEST != 'true'
+        uses: actions/cache@main
+        with:
+          key: ${{env.WRT_CONFIG}}-${{env.WRT_VER}}-${{env.WRT_HASH}}
+          restore-keys: ${{env.WRT_CONFIG}}-${{env.WRT_VER}}
+          path: |
+            ./wrt/.ccache
+            ./wrt/staging_dir/host*
+            ./wrt/staging_dir/tool*
+
+      - name: Update Caches
+        if: env.WRT_TEST != 'true'
+        run: |
+          if [ -d "./wrt/staging_dir" ]; then
+            find "./wrt/staging_dir" -type d -name "stamp" -not -path "*target*" | while read -r DIR; do
+              find "$DIR" -type f -exec touch {} +
+            done
+
+            mkdir -p ./wrt/tmp && echo "1" > ./wrt/tmp/.build
+
+            echo "toolchain skiped done!"
+          else
+            echo "caches missed!"
+          fi
+
+          if ${{steps.check-cache.outputs.cache-hit != 'true'}}; then
+            CACHE_LIST=$(gh cache list --key "$WRT_CONFIG-$WRT_VER" | cut -f 1)
+            for CACHE_KEY in $CACHE_LIST; do
+              gh cache delete $CACHE_KEY
+            done
+
+            echo "caches cleanup done!"
+          fi
 
       - name: Update Feeds
         run: |
@@ -138,14 +174,16 @@ jobs:
         if: env.WRT_TEST != 'true'
         run: |
           cd ./wrt/
+
           make download -j$(nproc)
 
       - name: Compile Firmware
         if: env.WRT_TEST != 'true'
         run: |
           cd ./wrt/
-          make -j1 V=sc
 
+          make -j$(nproc) || make -j$(nproc) V=s
+              
 #---------------------------以下语言包转换逻辑---------------------2025.05.04--------------#
       - name: Set Plugin List to Environment
         # 修正：在 Compile Firmware 之后生成插件列表
@@ -169,8 +207,8 @@ jobs:
           if [ -f $GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/language_package_log.txt ]; then
             cat $GITHUB_WORKSPACE/wrt
 
-#---------------------------以上语言包转换逻辑---------------------2025.05.04--------------#
-
+#---------------------------以上语言包转换逻辑---------------------2025.05.04--------------# 
+      
       - name: Machine Information
         run: |
           cd ./wrt/
