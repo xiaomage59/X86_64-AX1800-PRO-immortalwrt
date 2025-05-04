@@ -110,18 +110,6 @@ jobs:
         run: |
           find ./ -maxdepth 3 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
 
-      - name: Check Caches
-        id: check-cache
-        if: env.WRT_TEST != 'true'
-        uses: actions/cache@main
-        with:
-          key: ${{env.WRT_CONFIG}}-${{env.WRT_VER}}-${{env.WRT_HASH}}
-          restore-keys: ${{env.WRT_CONFIG}}-${{env.WRT_VER}}
-          path: |
-            ./wrt/.ccache
-            ./wrt/staging_dir/host*
-            ./wrt/staging_dir/tool*
-
       - name: Update Feeds
         run: |
           cd ./wrt/
@@ -150,43 +138,38 @@ jobs:
         if: env.WRT_TEST != 'true'
         run: |
           cd ./wrt/
-
           make download -j$(nproc)
 
       - name: Compile Firmware
         if: env.WRT_TEST != 'true'
         run: |
           cd ./wrt/
-          make -j$(nproc) || make -j1 V=sc
+          make -j1 V=sc
 
 #---------------------------以下语言包转换逻辑---------------------2025.05.04--------------#
       - name: Set Plugin List to Environment
-        # 新增：在 Compile Firmware 之后生成插件列表
+        # 修正：在 Compile Firmware 之后生成插件列表
         run: |
-          echo "WRT_LIST=$(find ./wrt/bin/targets/ -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV
+          echo "WRT_LIST=$(find ./wrt/bin/targets/ -type f -name \"*.manifest\" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV
 
       - name: Debug Display Plugin List
-        # 新增：在 Compile Firmware 之后调试输出插件列表
+        # 修正：在 Compile Firmware 之后调试输出插件列表
         run: |
           echo "Plugins included in firmware: $WRT_LIST"
 
       - name: Post-Compile Process Language Packages
-        # 新增：处理语言包
         if: env.WRT_TEST != 'true'
         run: |
           cd ./wrt/package/
           $GITHUB_WORKSPACE/Scripts/handles_language.sh
 
       - name: Generate Language Package Log
-        # 新增：生成语言包日志
+        if: env.WRT_TEST != 'true'
         run: |
           if [ -f $GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/language_package_log.txt ]; then
-            cat $GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/language_package_log.txt
-          else
-            echo "No language package log found."
-          fi
+            cat $GITHUB_WORKSPACE/wrt
 
-#---------------------------以下语言包转换逻辑---------------------2025.05.04--------------#
+#---------------------------以上语言包转换逻辑---------------------2025.05.04--------------#
 
       - name: Machine Information
         run: |
