@@ -118,18 +118,18 @@ install_lmo_files() {
 
 # 验证语言包是否正确安装
 validate_language_packages() {
-  echo "Validating installed language packages..."
+  echo "Validating installed language packages..." > "$OUTPUT_PATH/language_package_log.txt"
 
   for plugin_name in $PLUGIN_LIST; do
     lmo_file="${plugin_name}.zh-cn.lmo"
     if [ ! -f "$INSTALL_DIR/$lmo_file" ] && [ ! -f "$ROM_DIR/$lmo_file" ]; then
-      echo "Warning: Language package for $plugin_name is missing."
+      echo "Warning: Language package for $plugin_name is missing." >> "$OUTPUT_PATH/language_package_log.txt"
     else
-      echo "Language package for $plugin_name is successfully installed."
+      echo "Language package for $plugin_name is successfully installed." >> "$OUTPUT_PATH/language_package_log.txt"
     fi
   done
 
-  echo "Validation completed."
+  echo "Validation completed. Log is available at $OUTPUT_PATH/language_package_log.txt."
 }
 
 # 主逻辑：语言包处理
