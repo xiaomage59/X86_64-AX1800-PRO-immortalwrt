@@ -6,7 +6,6 @@
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/"
 INSTALL_RELATIVE_PATH="root/usr/lib/lua/luci/i18n/"
-BUILD_LANG_PATH="$PKG_PATH/<plugin>/$INSTALL_RELATIVE_PATH"
 
 # 创建输出目录
 mkdir -p "$OUTPUT_PATH"
@@ -39,6 +38,9 @@ process_language_packages() {
       continue
     fi
 
+    # 动态生成插件语言包路径
+    BUILD_LANG_PATH="$PKG_PATH/$plugin_name/$INSTALL_RELATIVE_PATH"
+
     # 查找插件中的 .po 文件
     find "$plugin_path" -type f -name "*.po" | while read -r po_file; do
       po_basename=$(basename "$po_file" .po)
@@ -48,10 +50,9 @@ process_language_packages() {
       po2lmo "$po_file" "$OUTPUT_PATH/$lmo_file"
 
       # 安装语言包到插件目录
-      install_dir="$plugin_path/$INSTALL_RELATIVE_PATH"
-      mkdir -p "$install_dir"
-      cp "$OUTPUT_PATH/$lmo_file" "$install_dir"
-      echo "Installed $lmo_file to $install_dir"
+      mkdir -p "$BUILD_LANG_PATH"
+      cp "$OUTPUT_PATH/$lmo_file" "$BUILD_LANG_PATH"
+      echo "Installed $lmo_file to $BUILD_LANG_PATH"
     done
   done
 }
@@ -59,14 +60,26 @@ process_language_packages() {
 # 验证语言包安装
 validate_language_packages() {
   echo "Validating installed language packages..."
+
+  # 从构建目录验证语言包是否正确安装
   for plugin_name in $PLUGIN_LIST; do
     lmo_file="${plugin_name}.zh-cn.lmo"
-    if ! find "$PKG_PATH" -name "$lmo_file" &>/dev/null; then
-      echo "Warning: Language package for $plugin_name is missing."
+    if [ ! -f "$OUTPUT_PATH/$lmo_file" ]; then
+      echo "Warning: Language package for $plugin_name is missing in build directory."
     else
-      echo "Language package for $plugin_name is successfully installed."
+      echo "Language package for $plugin_name is successfully installed in build directory."
     fi
   done
+
+  # 可选：验证已打包固件中的语言包（需要解压固件镜像）
+  # echo "Validating language packages in firmware image (optional)..."
+  # firmware_image="path/to/firmware.bin"
+  # if [ -f "$firmware_image" ]; then
+  #   mkdir -p firmware_check
+  #   unsquashfs -d firmware_check "$firmware_image"
+  #   # 检查解压后的语言包
+  #   find firmware_check -name "*.zh-cn.lmo"
+  # fi
 }
 
 # 执行逻辑
