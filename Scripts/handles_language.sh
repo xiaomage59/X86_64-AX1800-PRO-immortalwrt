@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Handles_language.sh: 改进后的语言包处理脚本，确保完整性和对 Compile Firmware 阶段的适配
+# Handles_language.sh: 改进后的语言包处理脚本
 
 # Paths
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
@@ -36,7 +36,11 @@ confirm_language_package_path() {
 
 # 获取现有语言包列表
 get_existing_plugins() {
-  EXISTING_PLUGINS=$(echo "$EXISTING_LANG_FILES" | xargs -n1 basename | sed 's/.zh-cn.lmo//' || echo "")
+  if [ -n "$EXISTING_LANG_FILES" ]; then
+    EXISTING_PLUGINS=$(echo "$EXISTING_LANG_FILES" | xargs -n1 basename | sed 's/.zh-cn.lmo//' || echo "")
+  else
+    EXISTING_PLUGINS=""
+  fi
 }
 
 # 筛选缺少语言包的插件
@@ -65,8 +69,9 @@ process_language_packages() {
         continue
       fi
 
-      echo "Converting $po_file to $BUILD_LANG_PATH/$lmo_file..." | tee -a "$LOG_FILE"
-      if ! po2lmo "$po_file" "$BUILD_LANG_PATH/$lmo_file"; then
+      OUTPUT_FILE="$BUILD_LANG_PATH/$lmo_file"
+      echo "Converting $po_file to $OUTPUT_FILE..." | tee -a "$LOG_FILE"
+      if ! po2lmo "$po_file" "$OUTPUT_FILE"; then
         echo "Warning: Failed to convert $po_file to $lmo_file. Skipping..." | tee -a "$LOG_FILE"
         continue
       fi
