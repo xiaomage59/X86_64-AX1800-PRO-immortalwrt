@@ -5,7 +5,7 @@
 # Paths
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/"
-INSTALL_RELATIVE_PATH="root/usr/lib/lua/luci/i18n/"
+INSTALL_GLOBAL_PATH="/usr/lib/lua/luci/i18n/"  # 语言包的全局安装路径（运行时路径）
 LOG_FILE="$OUTPUT_PATH/language_package_log.txt"
 
 # 创建输出目录和日志文件
@@ -22,7 +22,7 @@ fi
 PLUGIN_LIST=$(echo "$WRT_LIST" | tr ' ' '\n')
 
 # 获取现有语言包列表
-EXISTING_LANG_FILES=$(find "$PKG_PATH" -type f -name "*.zh-cn.lmo" -print || echo "")
+EXISTING_LANG_FILES=$(find "$OUTPUT_PATH" -type f -name "*.zh-cn.lmo" -print || echo "")
 EXISTING_PLUGINS=$(echo "$EXISTING_LANG_FILES" | xargs -n1 basename | sed 's/.zh-cn.lmo//' || echo "")
 
 # 筛选缺少语言包的插件
@@ -55,11 +55,10 @@ process_language_packages() {
         continue
       fi
 
-      # 安装语言包到插件目录
-      install_dir="$plugin_path/$INSTALL_RELATIVE_PATH"
-      mkdir -p "$install_dir"
-      cp "$OUTPUT_PATH/$lmo_file" "$install_dir"
-      echo "Installed $lmo_file to $install_dir" | tee -a "$LOG_FILE"
+      # 安装语言包到全局路径
+      mkdir -p "$OUTPUT_PATH/$INSTALL_GLOBAL_PATH"
+      cp "$OUTPUT_PATH/$lmo_file" "$OUTPUT_PATH/$INSTALL_GLOBAL_PATH"
+      echo "Installed $lmo_file to $INSTALL_GLOBAL_PATH" | tee -a "$LOG_FILE"
     done
   done
 }
@@ -69,7 +68,7 @@ validate_language_packages() {
   echo "Validating installed language packages..." | tee -a "$LOG_FILE"
   for plugin_name in $PLUGIN_LIST; do
     lmo_file="${plugin_name}.zh-cn.lmo"
-    if ! find "$PKG_PATH" -name "$lmo_file" &>/dev/null; then
+    if ! find "$OUTPUT_PATH/$INSTALL_GLOBAL_PATH" -name "$lmo_file" &>/dev/null; then
       echo "Warning: Language package for $plugin_name is missing." | tee -a "$LOG_FILE"
     else
       echo "Language package for $plugin_name is successfully installed." | tee -a "$LOG_FILE"
