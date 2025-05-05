@@ -185,27 +185,34 @@ jobs:
           make -j$(nproc) || make -j$(nproc) V=s
               
 #---------------------------以下语言包转换逻辑---------------------2025.05.04--------------#
+   
       - name: Set Plugin List to Environment
-        # 修正：在 Compile Firmware 之后生成插件列表
         run: |
-          echo "WRT_LIST=$(find ./wrt/bin/targets/ -type f -name \"*.manifest\" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV
+          echo "WRT_LIST=$(find ./wrt/bin/targets/ -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV
 
       - name: Debug Display Plugin List
-        # 修正：在 Compile Firmware 之后调试输出插件列表
         run: |
-          echo "Plugins included in firmware: $WRT_LIST"
+          if [ -z "$WRT_LIST" ]; then
+            echo "Warning: No plugins found in firmware."
+          else
+            echo "Plugins included in firmware: $WRT_LIST"
+          fi
 
       - name: Post-Compile Process Language Packages
         if: env.WRT_TEST != 'true'
         run: |
           cd ./wrt/package/
-          $GITHUB_WORKSPACE/Scripts/handles_language.sh
+          if ! $GITHUB_WORKSPACE/Scripts/handles_language.sh; then
+            echo "Warning: Language package processing failed. Check logs for details."
+          fi
 
       - name: Generate Language Package Log
-        if: env.WRT_TEST != 'true'
         run: |
           if [ -f $GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/language_package_log.txt ]; then
-            cat $GITHUB_WORKSPACE/wrt
+            cat $GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/language_package_log.txt
+          else
+            echo "Warning: No language package log found."
+          fi
 
 #---------------------------以上语言包转换逻辑---------------------2025.05.04--------------# 
       
