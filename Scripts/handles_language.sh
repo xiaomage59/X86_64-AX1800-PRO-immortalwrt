@@ -1,15 +1,16 @@
 #!/bin/bash
 
-# Handles_language.sh: 改进后的语言包处理脚本
+# Handles_language.sh: 改进后的语言包处理脚本，确保完整性和路径正确
 
 # Paths
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/"
-INSTALL_GLOBAL_PATH="/usr/lib/lua/luci/i18n/"  # 固件运行时的语言包路径
+STAGING_PATH="$GITHUB_WORKSPACE/wrt/staging_dir/target-*/root-*/usr/lib/lua/luci/i18n/"
 LOG_FILE="$OUTPUT_PATH/language_package_log.txt"
 
 # 创建输出目录和日志文件
 mkdir -p "$OUTPUT_PATH"
+mkdir -p "$STAGING_PATH"
 echo "Language Package Processing Log" > "$LOG_FILE"
 
 # 检查 po2lmo 工具是否可用
@@ -21,38 +22,24 @@ fi
 # 从环境变量中获取插件列表
 PLUGIN_LIST=$(echo "$WRT_LIST" | tr ' ' '\n')
 
-# 确认构建阶段的语言包路径
+# 获取构建阶段的 `.lmo` 文件路径
 confirm_language_package_path() {
   echo "Confirming existing language package paths..." | tee -a "$LOG_FILE"
-  EXISTING_LANG_FILES=$(find "$OUTPUT_PATH" -type f -name "*.zh-cn.lmo" -print || echo "")
-  if [ -z "$EXISTING_LANG_FILES" ]; then
-    echo "Warning: No existing language packages found in $OUTPUT_PATH. Defaulting to $INSTALL_GLOBAL_PATH in build directory." | tee -a "$LOG_FILE"
-    BUILD_LANG_PATH="$OUTPUT_PATH$INSTALL_GLOBAL_PATH"
-  else
-    BUILD_LANG_PATH=$(dirname "$(echo "$EXISTING_LANG_FILES" | head -n 1)")
+  if [ -d "$STAGING_PATH" ]; then
+    BUILD_LANG_PATH="$STAGING_PATH"
     echo "Detected build language package path: $BUILD_LANG_PATH" | tee -a "$LOG_FILE"
-  fi
-}
-
-# 获取现有语言包列表
-get_existing_plugins() {
-  if [ -n "$EXISTING_LANG_FILES" ]; then
-    EXISTING_PLUGINS=$(echo "$EXISTING_LANG_FILES" | xargs -n1 basename | sed 's/.zh-cn.lmo//' || echo "")
   else
-    EXISTING_PLUGINS=""
+    echo "Warning: No staging directory found. Creating default path at $STAGING_PATH" | tee -a "$LOG_FILE"
+    mkdir -p "$STAGING_PATH"
+    BUILD_LANG_PATH="$STAGING_PATH"
   fi
-}
-
-# 筛选缺少语言包的插件
-get_missing_language_packs() {
-  NEED_LANG_PACKS=$(comm -23 <(echo "$PLUGIN_LIST" | sort) <(echo "$EXISTING_PLUGINS" | sort) || echo "")
 }
 
 # 转换语言包
 process_language_packages() {
   echo "Processing .po files to .lmo for zh-cn..." | tee -a "$LOG_FILE"
 
-  for plugin_name in $NEED_LANG_PACKS; do
+  for plugin_name in $PLUGIN_LIST; do
     plugin_path=$(find "$PKG_PATH" -type d -name "$plugin_name" -print -quit || echo "")
     if [ -z "$plugin_path" ]; then
       echo "Warning: Plugin $plugin_name not found in package directory. Skipping..." | tee -a "$LOG_FILE"
@@ -95,10 +82,6 @@ validate_language_packages() {
 
 # 确认构建阶段语言包路径
 confirm_language_package_path
-# 获取已存在语言包的插件
-get_existing_plugins
-# 获取缺少语言包的插件
-get_missing_language_packs
 # 转换缺少的语言包
 process_language_packages
 # 验证语言包安装
