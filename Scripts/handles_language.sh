@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# 修正后的语言包处理脚本，解决路径匹配和文件名问题
-
 # Paths
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/"
@@ -20,40 +18,28 @@ if ! command -v po2lmo &> /dev/null; then
   exit 1
 fi
 
-# 获取有效插件列表（过滤不存在的插件）
-VALID_PLUGINS=""
-for plugin in $WRT_LIST; do
-  if find "$PKG_PATH" -type d -name "$plugin" | grep -q .; then
-    VALID_PLUGINS="$VALID_PLUGINS $plugin"
-  else
-    echo "Warning: Skip non-existent plugin $plugin" | tee -a "$LOG_FILE"
-  fi
-done
-
 # 转换语言包
 process_language_packages() {
-  echo "Processing .po files for valid plugins: $VALID_PLUGINS" | tee -a "$LOG_FILE"
+  echo "Processing .po files..." | tee -a "$LOG_FILE"
   
-  for plugin in $VALID_PLUGINS; do
-    # 生成标准化的 lmo 文件名
+  # 遍历插件列表
+  for plugin in $WRT_LIST; do
+    # 提取插件核心名称（例如 luci-app-alist → alist）
     clean_name=$(echo "$plugin" | sed -E 's/^luci-(app|theme)-//')
-    lmo_prefix="luci-i18n-${clean_name}-zh-cn"
-
-    # 查找所有 .po 文件
-    find "$PKG_PATH/$plugin" -type f -name "*.po" | while read -r po_file; do
-      # 提取语言区域（如 zh-cn/zh_Hans）
-      lang_dir=$(dirname "$po_file" | xargs basename)
-      case "$lang_dir" in
-        zh-cn|zh_Hans|zh_CN)
-          lmo_file="${lmo_prefix}.lmo"
-          output_path="$STAGING_PATH/$lmo_file"
-          echo "Converting $po_file to $output_path" | tee -a "$LOG_FILE"
-          po2lmo "$po_file" "$output_path" || echo "Error: Convert $po_file failed" | tee -a "$LOG_FILE"
-          ;;
-        *)
-          echo "Skip non-ZH po file: $po_file" | tee -a "$LOG_FILE"
-          ;;
-      esac
+    
+    # 查找插件的 .po 文件（匹配 zh-cn/zh_Hans 目录）
+    find "$PKG_PATH/$plugin" -type f -path "*/po/zh[-_]*/*.po" | while read -r po_file; do
+      # 提取 .po 文件基名（例如 alist.po → alist）
+      po_basename=$(basename "$po_file" .po)
+      
+      # 生成目标 .lmo 文件名（例如 alist.zh-cn.lmo）
+      lmo_file="${po_basename}.zh-cn.lmo"
+      output_path="$STAGING_PATH/$lmo_file"
+      
+      echo "Converting $po_file to $output_path" | tee -a "$LOG_FILE"
+      if ! po2lmo "$po_file" "$output_path"; then
+        echo "Error: Failed to convert $po_file" | tee -a "$LOG_FILE"
+      fi
     done
   done
 }
@@ -61,11 +47,12 @@ process_language_packages() {
 # 验证语言包
 validate_language_packages() {
   echo "Validating language packages..." | tee -a "$LOG_FILE"
-  for plugin in $VALID_PLUGINS; do
+  for plugin in $WRT_LIST; do
     clean_name=$(echo "$plugin" | sed -E 's/^luci-(app|theme)-//')
-    lmo_file="luci-i18n-${clean_name}-zh-cn.lmo"
-    if [ ! -f "$STAGING_PATH/$lmo_file" ]; then
-      echo "Error: Missing $lmo_file for $plugin" | tee -a "$LOG_FILE"
+    # 预期生成的 .lmo 文件名（例如 alist.zh-cn.lmo）
+    expected_lmo="${clean_name}.zh-cn.lmo"
+    if [ ! -f "$STAGING_PATH/$expected_lmo" ]; then
+      echo "Warning: Missing $expected_lmo for $plugin" | tee -a "$LOG_FILE"
     fi
   done
 }
