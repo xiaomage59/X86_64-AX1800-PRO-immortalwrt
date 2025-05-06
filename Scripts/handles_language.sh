@@ -1,11 +1,14 @@
 #!/bin/bash
 
-# Handles_language.sh: 改进后的语言包处理脚本，确保完整性和路径正确
+# 修正后的语言包处理脚本，解决路径和文件名问题
 
 # Paths
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/"
-STAGING_PATH="$GITHUB_WORKSPACE/wrt/staging_dir/target-*/root-*/usr/lib/lua/luci/i18n/"
+# 动态获取目标架构和子目标（通过环境变量）
+TARGET_ARCH=$(ls -d $GITHUB_WORKSPACE/wrt/staging_dir/target-* | xargs -n1 basename | sed 's/target-//')
+SUBTARGET=$(ls -d $GITHUB_WORKSPACE/wrt/staging_dir/target-*/root-* | xargs -n1 basename | sed 's/root-//')
+STAGING_PATH="$GITHUB_WORKSPACE/wrt/staging_dir/target-$TARGET_ARCH/root-$SUBTARGET/usr/lib/lua/luci/i18n/"
 LOG_FILE="$OUTPUT_PATH/language_package_log.txt"
 
 # 创建输出目录和日志文件
@@ -40,6 +43,8 @@ process_language_packages() {
   echo "Processing .po files to .lmo for zh-cn..." | tee -a "$LOG_FILE"
 
   for plugin_name in $PLUGIN_LIST; do
+    # 去除插件名前缀（如 luci-app-）
+    clean_name=$(echo "$plugin_name" | sed 's/^luci-\(app\|theme\)-//')
     plugin_path=$(find "$PKG_PATH" -type d -name "$plugin_name" -print -quit || echo "")
     if [ -z "$plugin_path" ]; then
       echo "Warning: Plugin $plugin_name not found in package directory. Skipping..." | tee -a "$LOG_FILE"
@@ -49,7 +54,7 @@ process_language_packages() {
     # 查找插件中的 .po 文件
     find "$plugin_path" -type f -name "*.po" | while read -r po_file; do
       po_basename=$(basename "$po_file" .po || echo "")
-      lmo_file="${po_basename}.zh-cn.lmo"
+      lmo_file="${clean_name}.zh-cn.lmo"  # 使用清理后的名称
 
       if [ -z "$po_basename" ]; then
         echo "Warning: Failed to process $po_file. Skipping..." | tee -a "$LOG_FILE"
@@ -71,7 +76,8 @@ process_language_packages() {
 validate_language_packages() {
   echo "Validating installed language packages..." | tee -a "$LOG_FILE"
   for plugin_name in $PLUGIN_LIST; do
-    lmo_file="${plugin_name}.zh-cn.lmo"
+    clean_name=$(echo "$plugin_name" | sed 's/^luci-\(app\|theme\)-//')
+    lmo_file="${clean_name}.zh-cn.lmo"  # 使用清理后的名称
     if ! find "$BUILD_LANG_PATH" -name "$lmo_file" &>/dev/null; then
       echo "Warning: Language package for $plugin_name is missing." | tee -a "$LOG_FILE"
     else
@@ -80,9 +86,7 @@ validate_language_packages() {
   done
 }
 
-# 确认构建阶段语言包路径
+# 执行主流程
 confirm_language_package_path
-# 转换缺少的语言包
 process_language_packages
-# 验证语言包安装
 validate_language_packages
