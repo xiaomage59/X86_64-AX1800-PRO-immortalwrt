@@ -1,15 +1,12 @@
 #!/bin/bash
 
-# Paths
+# 路径定义
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
-OUTPUT_PATH="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/"
-TARGET_ARCH=$(ls -d $GITHUB_WORKSPACE/wrt/staging_dir/target-* | xargs -n1 basename | sed 's/target-//')
-SUBTARGET=$(ls -d $GITHUB_WORKSPACE/wrt/staging_dir/target-*/root-* | xargs -n1 basename | sed 's/root-//')
-STAGING_PATH="$GITHUB_WORKSPACE/wrt/staging_dir/target-$TARGET_ARCH/root-$SUBTARGET/usr/lib/lua/luci/i18n/"
-LOG_FILE="$OUTPUT_PATH/language_package_log.txt"
+STAGING_PATH="$GITHUB_WORKSPACE/wrt/staging_dir/target-$(ls -d $GITHUB_WORKSPACE/wrt/staging_dir/target-* | xargs -n1 basename | sed 's/target-//')/root-$(ls -d $GITHUB_WORKSPACE/wrt/staging_dir/target-*/root-* | xargs -n1 basename | sed 's/root-//')/usr/lib/lua/luci/i18n/"
+LOG_FILE="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files/language_package_log.txt"
 
-# 创建目录和日志
-mkdir -p "$OUTPUT_PATH" "$STAGING_PATH"
+# 初始化日志
+mkdir -p "$(dirname "$LOG_FILE")"
 echo "Language Package Processing Log" > "$LOG_FILE"
 
 # 检查工具链
@@ -18,28 +15,36 @@ if ! command -v po2lmo &> /dev/null; then
   exit 1
 fi
 
+# 获取已存在的语言包列表
+EXISTING_LMO=$(find "$STAGING_PATH" -name "*.zh-cn.lmo" -exec basename {} \; | sed 's/.zh-cn.lmo//')
+
+# 处理插件列表：过滤无效插件并生成待处理列表
+VALID_PLUGINS=""
+for plugin in $WRT_LIST; do
+  # 尝试匹配插件目录（兼容不同命名风格）
+  plugin_dir=$(find "$PKG_PATH" -type d -name "*$(echo "$plugin" | sed 's/^luci-//')*" -print -quit)
+  if [ -n "$plugin_dir" ]; then
+    clean_name=$(basename "$plugin_dir" | sed 's/^luci-//')
+    # 检查语言包是否已存在
+    if ! echo "$EXISTING_LMO" | grep -q "^$clean_name$"; then
+      VALID_PLUGINS="$VALID_PLUGINS $plugin_dir"
+      echo "Queue plugin for processing: $plugin_dir" | tee -a "$LOG_FILE"
+    else
+      echo "Skip existing language package: $clean_name" | tee -a "$LOG_FILE"
+    fi
+  else
+    echo "Warning: Plugin directory not found for $plugin" | tee -a "$LOG_FILE"
+  fi
+done
+
 # 转换语言包
 process_language_packages() {
-  echo "Processing .po files..." | tee -a "$LOG_FILE"
-  
-  # 遍历插件列表
-  for plugin in $WRT_LIST; do
-    # 提取插件核心名称（例如 luci-app-alist → alist）
-    clean_name=$(echo "$plugin" | sed -E 's/^luci-(app|theme)-//')
-    
-    # 查找插件的 .po 文件（匹配 zh-cn/zh_Hans 目录）
-    find "$PKG_PATH/$plugin" -type f -path "*/po/zh[-_]*/*.po" | while read -r po_file; do
-      # 提取 .po 文件基名（例如 alist.po → alist）
+  for plugin_dir in $VALID_PLUGINS; do
+    find "$plugin_dir" -type f -path "*/po/zh[-_]*/*.po" | while read -r po_file; do
       po_basename=$(basename "$po_file" .po)
-      
-      # 生成目标 .lmo 文件名（例如 alist.zh-cn.lmo）
-      lmo_file="${po_basename}.zh-cn.lmo"
-      output_path="$STAGING_PATH/$lmo_file"
-      
-      echo "Converting $po_file to $output_path" | tee -a "$LOG_FILE"
-      if ! po2lmo "$po_file" "$output_path"; then
-        echo "Error: Failed to convert $po_file" | tee -a "$LOG_FILE"
-      fi
+      lmo_file="$STAGING_PATH/${po_basename}.zh-cn.lmo"
+      echo "Converting $po_file to $lmo_file" | tee -a "$LOG_FILE"
+      po2lmo "$po_file" "$lmo_file" || echo "Error: Failed to convert $po_file" | tee -a "$LOG_FILE"
     done
   done
 }
@@ -48,15 +53,13 @@ process_language_packages() {
 validate_language_packages() {
   echo "Validating language packages..." | tee -a "$LOG_FILE"
   for plugin in $WRT_LIST; do
-    clean_name=$(echo "$plugin" | sed -E 's/^luci-(app|theme)-//')
-    # 预期生成的 .lmo 文件名（例如 alist.zh-cn.lmo）
-    expected_lmo="${clean_name}.zh-cn.lmo"
-    if [ ! -f "$STAGING_PATH/$expected_lmo" ]; then
-      echo "Warning: Missing $expected_lmo for $plugin" | tee -a "$LOG_FILE"
+    clean_name=$(echo "$plugin" | sed 's/^luci-//')
+    if [ ! -f "$STAGING_PATH/${clean_name}.zh-cn.lmo" ]; then
+      echo "Error: Missing language package for $plugin (expected: ${clean_name}.zh-cn.lmo)" | tee -a "$LOG_FILE"
     fi
   done
 }
 
-# 执行主流程
+# 执行流程
 process_language_packages
 validate_language_packages
