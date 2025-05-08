@@ -1,127 +1,131 @@
 #!/bin/bash
+# 终极解决方案 - 修复验证误报和文件缺失问题
 
-# 动态获取目标架构和子目标
+# 动态获取架构
 TARGET_ARCH=$(find "$GITHUB_WORKSPACE/wrt/staging_dir" -maxdepth 1 -type d -name "target-*" | head -n1 | xargs basename | sed 's/target-//')
 SUBTARGET=$(find "$GITHUB_WORKSPACE/wrt/staging_dir/target-$TARGET_ARCH" -maxdepth 1 -type d -name "root-*" | head -n1 | xargs basename | sed 's/root-//')
 
-# 路径配置
+# 扩展搜索路径（包含所有可能位置）
 SEARCH_PATHS=(
   "$GITHUB_WORKSPACE/wrt/package"
   "$GITHUB_WORKSPACE/wrt/feeds/luci"
   "$GITHUB_WORKSPACE/wrt/feeds/packages"
+  "$GITHUB_WORKSPACE/wrt/package/aliyundrive-webdav/openwrt"
   "$GITHUB_WORKSPACE/wrt/feeds/extra"
 )
-STAGING_PATH="$GITHUB_WORKSPACE/wrt/staging_dir/target-$TARGET_ARCH/root-$SUBTARGET/usr/lib/lua/luci/i18n"
+
+# 关键目录配置
+STAGING_I18N="$GITHUB_WORKSPACE/wrt/staging_dir/target-$TARGET_ARCH/root-$SUBTARGET/usr/lib/lua/luci/i18n"
 LOG_DIR="$GITHUB_WORKSPACE/wrt/build_dir/target-lmo-files"
-MAIN_LOG="$LOG_DIR/language_package_main.log"
-PLUGIN_LOG_DIR="$LOG_DIR/plugin_logs"
+mkdir -p "$STAGING_I18N" "$LOG_DIR"
 
-# 初始化环境
-mkdir -p "$STAGING_PATH" "$PLUGIN_LOG_DIR"
-echo "=== Language Package Processing Started === $(date)" > "$MAIN_LOG"
-echo "Target Arch: $TARGET_ARCH" >> "$MAIN_LOG"
-echo "Subtarget: $SUBTARGET" >> "$MAIN_LOG"
+# 主日志配置
+MAIN_LOG="$LOG_DIR/language_package_final.log"
+exec > >(tee -a "$MAIN_LOG") 2>&1
 
-# 检查工具
-if ! command -v po2lmo &> /dev/null; then
-  echo "ERROR: po2lmo not found. Install it using 'sudo apt install po4a'" | tee -a "$MAIN_LOG"
-  exit 1
-fi
+echo "===== 语言包处理开始 ====="
+echo "目标架构: $TARGET_ARCH"
+echo "子架构: $SUBTARGET"
+echo "语言包目录: $STAGING_I18N"
 
-# 筛选目标语言的 `.po` 文件
-find_po_files() {
-  local plugin_path=$1
-  find "$plugin_path" -type f \( -path "*/po/zh-cn/*.po" -o -path "*/po/zh_Hans/*.po" \) -print
+# 工具检查
+type po2lmo >/dev/null 2>&1 || { echo "错误：po2lmo未安装，请执行: sudo apt install po4a"; exit 1; }
+
+# 核心函数：生成正确的.lmo文件名
+get_lmo_name() {
+  local plugin=$1
+  # 转换规则：
+  # luci-app-xxx → xxx.zh-cn.lmo
+  # luci-theme-yyy → yyy.zh-cn.lmo
+  echo "${plugin#luci-*}" | sed -E 's/^(app|theme)-//'
 }
 
-# 核心函数：获取有效插件列表
-get_missing_language_plugins() {
-  local valid_plugins=""
+# 增强版插件查找（支持多级目录和别名）
+find_plugin_dir() {
+  local plugin=$1
+  local search_name="${plugin#luci-}"
+  
+  for path in "${SEARCH_PATHS[@]}"; do
+    # 查找可能的目录（包括子目录）
+    found=$(find "$path" -type d -iname "*${search_name}*" -print -quit)
+    [ -n "$found" ] && echo "$found" && return 0
+  done
+  return 1
+}
+
+# 智能po文件查找
+find_po_file() {
+  local dir=$1
+  # 查找优先级：zh-cn > zh_Hans > 首个.po文件
+  local po_file=$(find "$dir" -type f \( -path "*/po/zh-cn/*.po" -o -path "*/po/zh_Hans/*.po" \) -print -quit)
+  [ -z "$po_file" ] && po_file=$(find "$dir" -type f -name "*.po" -print -quit)
+  echo "$po_file"
+}
+
+# 主处理流程
+process_plugins() {
+  echo "===== 开始处理插件 ====="
+  
   for plugin in $WRT_LIST; do
-    # 去除插件名前缀（如 luci-app-）
-    clean_name=$(echo "$plugin" | sed -E 's/^luci-(app|theme)-//')
+    lmo_name=$(get_lmo_name "$plugin")
+    lmo_file="$STAGING_I18N/${lmo_name}.zh-cn.lmo"
     
-    # 多路径搜索插件目录
-    plugin_path=""
-    for base_path in "${SEARCH_PATHS[@]}"; do
-      plugin_path=$(find "$base_path" -type d -name "*${clean_name}*" -print -quit 2>/dev/null)
-      [ -n "$plugin_path" ] && break
-    done
-
-    if [ -n "$plugin_path" ]; then
-      # 检查是否已有语言包
-      if [ -n "$plugin_path" ]; then
-      if [ ! -f "$STAGING_PATH/${clean_name}.zh-cn.lmo" ]; then
-        valid_plugins="$valid_plugins"$'\n'"$plugin_path"
-        echo "$(date) - QUEUED: $plugin (path: $plugin_path)" >> "$MAIN_LOG"
-      else
-        echo "$(date) - SKIPPED: $plugin (language package already exists)" >> "$MAIN_LOG"
-      fi
-    else
-      echo "$(date) - WARNING: Plugin $plugin not found in any search path" >> "$MAIN_LOG"
+    # 跳过已存在的语言包
+    [ -f "$lmo_file" ] && continue
+    
+    # 查找插件目录
+    if ! plugin_dir=$(find_plugin_dir "$plugin"); then
+      echo "[警告] 插件目录未找到: $plugin"
+      continue
     fi
-  done
-  echo "$valid_plugins"
-}
 
-# 转换语言包
-convert_po_files() {
-  local plugin_path=$1
-  local plugin_name=$(basename "$plugin_path")
-  local clean_name=$(echo "$plugin_name" | sed -E 's/^luci-(app|theme)-//')
-  local plugin_log="$PLUGIN_LOG_DIR/${clean_name}.log"
+    # 查找po文件
+    if ! po_file=$(find_po_file "$plugin_dir"); then
+      echo "[错误] 未找到.po文件: $plugin (搜索路径: $plugin_dir/po/)"
+      continue
+    fi
 
-  echo "$(date) - PROCESSING: $plugin_name" > "$plugin_log"
-
-  # 检查路径是否存在
-  if [ ! -d "$plugin_path" ]; then
-    echo "$(date) - ERROR: Plugin path $plugin_path does not exist" >> "$plugin_log"
-    return
-  fi
-
-  # 查找所有目标语言的 `.po` 文件
-  find_po_files "$plugin_path" | while read -r po_file; do
-    po_basename=$(basename "$po_file" .po)
-    lmo_file="$STAGING_PATH/${po_basename}.zh-cn.lmo"
-
-    echo "$(date) - Converting: $po_file → $lmo_file" >> "$plugin_log"
+    # 转换语言包
     if po2lmo "$po_file" "$lmo_file"; then
-      echo "$(date) - SUCCESS: Generated $lmo_file" >> "$plugin_log"
+      echo "[成功] 生成: $lmo_file (来源: $po_file)"
     else
-      echo "$(date) - ERROR: Failed to convert $po_file" >> "$plugin_log"
+      echo "[错误] 转换失败: $po_file → $lmo_file"
+      rm -f "$lmo_file" 2>/dev/null
     fi
   done
 }
 
-# 导出函数以便子 shell 使用
-export -f find_po_files
-export -f convert_po_files
-export STAGING_PATH
-export MAIN_LOG
-export PLUGIN_LOG_DIR
+# 精确验证（仅检查实际处理的插件）
+validate_results() {
+  echo "===== 验证结果 ====="
+  local all_success=true
 
-# 主流程
-VALID_PLUGINS=$(get_missing_language_plugins)
-if [ -z "$VALID_PLUGINS" ]; then
-  echo "No plugins require language package processing. Exiting." >> "$MAIN_LOG"
-  exit 0
-fi
+  for plugin in $WRT_LIST; do
+    lmo_name=$(get_lmo_name "$plugin")
+    lmo_file="$STAGING_I18N/${lmo_name}.zh-cn.lmo"
+    
+    # 仅验证理论上应该存在的语言包
+    if [ -f "$lmo_file" ]; then
+      echo "[通过] $plugin → $(basename "$lmo_file")"
+    else
+      # 检查是否真的需要该语言包
+      if plugin_dir=$(find_plugin_dir "$plugin") && [ -n "$(find_po_file "$plugin_dir")" ]; then
+        echo "[失败] 缺失语言包: $plugin (应存在: ${lmo_name}.zh-cn.lmo)"
+        all_success=false
+      else
+        echo "[跳过] 无翻译文件: $plugin"
+      fi
+    fi
+  done
 
-echo "=== Plugins Missing Language Packs === $(date)" >> "$MAIN_LOG"
-echo "$VALID_PLUGINS" | tr ' ' '\n' >> "$MAIN_LOG"
+  $all_success && echo "===== 所有语言包验证通过 =====" || echo "===== 存在缺失的语言包 ====="
+}
 
-# 并发处理（移除冲突参数 - 仅使用 -I）
-echo "$VALID_PLUGINS" | xargs -d '\n' -P$(nproc) -I{} bash -c 'convert_po_files "{}"'
+# 执行流程
+process_plugins
+validate_results
 
-# 最终验证
-echo "=== Validation Results === $(date)" >> "$MAIN_LOG"
-for plugin in $WRT_LIST; do
-  clean_name=$(echo "$plugin" | sed -E 's/^luci-(app|theme)-//')
-  if [ -f "$STAGING_PATH/${clean_name}.zh-cn.lmo" ]; then
-    echo "$(date) - PASS: $plugin has valid language pack" >> "$MAIN_LOG"
-  else
-    echo "$(date) - FAIL: $plugin missing language pack" >> "$MAIN_LOG"
-  fi
-done
-
-echo "=== Processing Complete === $(date)" >> "$MAIN_LOG"
+# 生成清单文件（用于调试）
+find "$STAGING_I18N" -name "*.zh-cn.lmo" | sort > "$LOG_DIR/generated_lmo_files.txt"
+echo "===== 已生成的语言包清单 ====="
+cat "$LOG_DIR/generated_lmo_files.txt"
