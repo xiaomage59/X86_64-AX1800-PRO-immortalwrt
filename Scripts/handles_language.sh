@@ -10,8 +10,13 @@ SEARCH_PATHS=(
   "$GITHUB_WORKSPACE/wrt/package"
   "$GITHUB_WORKSPACE/wrt/feeds/luci"
   "$GITHUB_WORKSPACE/wrt/feeds/packages"
-  "$GITHUB_WORKSPACE/wrt/package/aliyundrive-webdav/openwrt"
   "$GITHUB_WORKSPACE/wrt/feeds/extra"
+  "$GITHUB_WORKSPACE/wrt/feeds/luci/applications"
+  "$GITHUB_WORKSPACE/wrt/feeds/luci/themes"
+  "$GITHUB_WORKSPACE/wrt/feeds/packages/net"
+  "$GITHUB_WORKSPACE/wrt/feeds/packages/utils"
+  "$GITHUB_WORKSPACE/wrt/package/aliyundrive-webdav/openwrt"
+  "$GITHUB_WORKSPACE/wrt/package/linkease"
 )
 
 # 关键目录配置
@@ -37,7 +42,7 @@ get_lmo_name() {
   # 转换规则：
   # luci-app-xxx → xxx.zh-cn.lmo
   # luci-theme-yyy → yyy.zh-cn.lmo
-  echo "${plugin#luci-*}" | sed -E 's/^(app|theme)-//'
+  echo "${plugin#luci-*}" | sed -E 's/^(app|theme|lib)-//'
 }
 
 # 增强版插件查找（支持多级目录和别名）
@@ -46,19 +51,19 @@ find_plugin_dir() {
   local search_name="${plugin#luci-}"
   
   for path in "${SEARCH_PATHS[@]}"; do
-    # 查找可能的目录（包括子目录）
-    found=$(find "$path" -type d -iname "*${search_name}*" -print -quit)
+    # 递归查找匹配插件名的目录（支持子目录）
+    found=$(find "$path" -type d -iregex ".*/${plugin}\(-[a-z0-9]+)*" -print -quit)
     [ -n "$found" ] && echo "$found" && return 0
   done
   return 1
 }
 
-# 智能po文件查找
+# 智能po文件查找（支持多层级结构）
 find_po_file() {
   local dir=$1
-  # 查找优先级：zh-cn > zh_Hans > 首个.po文件
+  # 查找优先级：zh-cn > zh_Hans > 任意位置
   local po_file=$(find "$dir" -type f \( -path "*/po/zh-cn/*.po" -o -path "*/po/zh_Hans/*.po" \) -print -quit)
-  [ -z "$po_file" ] && po_file=$(find "$dir" -type f -name "*.po" -print -quit)
+  [ -z "$po_file" ] && po_file=$(find "$dir" -type f \( -path "*/i18n/*.po" -o -path "*/po/*.po" \) -print -quit)
   echo "$po_file"
 }
 
@@ -81,21 +86,25 @@ process_plugins() {
 
     # 查找po文件
     if ! po_file=$(find_po_file "$plugin_dir"); then
-      echo "[错误] 未找到.po文件: $plugin (搜索路径: $plugin_dir/po/)"
+      echo "[跳过] 无翻译文件: $plugin (路径: $plugin_dir)"
       continue
     fi
 
     # 转换语言包
-    if po2lmo "$po_file" "$lmo_file"; then
-      echo "[成功] 生成: $lmo_file (来源: $po_file)"
+    if [ -f "$po_file" ]; then
+      if po2lmo "$po_file" "$lmo_file"; then
+        echo "[成功] 生成: $lmo_file (来源: $po_file)"
+      else
+        echo "[错误] 转换失败: $po_file → $lmo_file"
+        rm -f "$lmo_file" 2>/dev/null
+      fi
     else
-      echo "[错误] 转换失败: $po_file → $lmo_file"
-      rm -f "$lmo_file" 2>/dev/null
+      echo "[错误] .po文件不存在: $plugin_dir"
     fi
   done
 }
 
-# 精确验证（仅检查实际处理的插件）
+# 精确验证（区分无翻译和转换失败）
 validate_results() {
   echo "===== 验证结果 ====="
   local all_success=true
@@ -104,17 +113,21 @@ validate_results() {
     lmo_name=$(get_lmo_name "$plugin")
     lmo_file="$STAGING_I18N/${lmo_name}.zh-cn.lmo"
     
-    # 仅验证理论上应该存在的语言包
-    if [ -f "$lmo_file" ]; then
-      echo "[通过] $plugin → $(basename "$lmo_file")"
-    else
-      # 检查是否真的需要该语言包
-      if plugin_dir=$(find_plugin_dir "$plugin") && [ -n "$(find_po_file "$plugin_dir")" ]; then
-        echo "[失败] 缺失语言包: $plugin (应存在: ${lmo_name}.zh-cn.lmo)"
-        all_success=false
+    # 查找插件目录
+    if plugin_dir=$(find_plugin_dir "$plugin"); then
+      # 检查是否存在po文件
+      if po_file=$(find_po_file "$plugin_dir"); then
+        if [ -f "$lmo_file" ]; then
+          echo "[通过] $plugin → $(basename "$lmo_file")"
+        else
+          echo "[失败] 缺失语言包: $plugin (应存在: ${lmo_name}.zh-cn.lmo)"
+          all_success=false
+        fi
       else
         echo "[跳过] 无翻译文件: $plugin"
       fi
+    else
+      echo "[警告] 插件目录未找到: $plugin"
     fi
   done
 
