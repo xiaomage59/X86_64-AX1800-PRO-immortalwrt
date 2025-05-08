@@ -109,8 +109,8 @@ fi
 echo "=== Plugins Missing Language Packs === $(date)" >> "$MAIN_LOG"
 echo "$VALID_PLUGINS" | tr ' ' '\n' >> "$MAIN_LOG"
 
-# 并发处理（移除冲突参数）
-echo "$VALID_PLUGINS" | xargs -n1 -P$(nproc) -I{} bash -c 'convert_po_files "{}"'
+# 并发处理（移除冲突参数 - 仅使用 -I）
+echo "$VALID_PLUGINS" | xargs -P$(nproc) -I{} bash -c 'convert_po_files "{}"'
 
 # 最终验证
 echo "=== Validation Results === $(date)" >> "$MAIN_LOG"
