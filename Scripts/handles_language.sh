@@ -86,12 +86,19 @@ convert_po_files() {
   done
 }
 
+# 导出函数以便子 shell 使用
+export -f find_po_files
+export -f convert_po_files
+export STAGING_PATH
+export MAIN_LOG
+export PLUGIN_LOG_DIR
+
 # 主流程
 VALID_PLUGINS=$(get_missing_language_plugins)
 echo "=== Plugins Missing Language Packs === $(date)" >> "$MAIN_LOG"
 echo "$VALID_PLUGINS" | tr ' ' '\n' >> "$MAIN_LOG"
 
-# 并发处理（限制并发任务数量）
+# 并发处理（移除冲突参数）
 echo "$VALID_PLUGINS" | xargs -n1 -P$(nproc) -I{} bash -c 'convert_po_files "{}"'
 
 # 最终验证
