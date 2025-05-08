@@ -101,6 +101,11 @@ export PLUGIN_LOG_DIR
 
 # 主流程
 VALID_PLUGINS=$(get_missing_language_plugins)
+if [ -z "$VALID_PLUGINS" ]; then
+  echo "No plugins require language package processing. Exiting." >> "$MAIN_LOG"
+  exit 0
+fi
+
 echo "=== Plugins Missing Language Packs === $(date)" >> "$MAIN_LOG"
 echo "$VALID_PLUGINS" | tr ' ' '\n' >> "$MAIN_LOG"
 
