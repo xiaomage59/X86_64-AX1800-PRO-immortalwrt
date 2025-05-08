@@ -50,8 +50,9 @@ get_missing_language_plugins() {
 
     if [ -n "$plugin_path" ]; then
       # 检查是否已有语言包
+      if [ -n "$plugin_path" ]; then
       if [ ! -f "$STAGING_PATH/${clean_name}.zh-cn.lmo" ]; then
-        valid_plugins="$valid_plugins $plugin_path"
+        valid_plugins="$valid_plugins"$'\n'"$plugin_path"
         echo "$(date) - QUEUED: $plugin (path: $plugin_path)" >> "$MAIN_LOG"
       else
         echo "$(date) - SKIPPED: $plugin (language package already exists)" >> "$MAIN_LOG"
@@ -110,7 +111,7 @@ echo "=== Plugins Missing Language Packs === $(date)" >> "$MAIN_LOG"
 echo "$VALID_PLUGINS" | tr ' ' '\n' >> "$MAIN_LOG"
 
 # 并发处理（移除冲突参数 - 仅使用 -I）
-echo "$VALID_PLUGINS" | xargs -P$(nproc) -I{} bash -c 'convert_po_files "{}"'
+echo "$VALID_PLUGINS" | xargs -d '\n' -P$(nproc) -I{} bash -c 'convert_po_files "{}"'
 
 # 最终验证
 echo "=== Validation Results === $(date)" >> "$MAIN_LOG"
