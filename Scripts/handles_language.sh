@@ -72,6 +72,12 @@ convert_po_files() {
 
   echo "$(date) - PROCESSING: $plugin_name" > "$plugin_log"
 
+  # 检查路径是否存在
+  if [ ! -d "$plugin_path" ]; then
+    echo "$(date) - ERROR: Plugin path $plugin_path does not exist" >> "$plugin_log"
+    return
+  fi
+
   # 查找所有目标语言的 `.po` 文件
   find_po_files "$plugin_path" | while read -r po_file; do
     po_basename=$(basename "$po_file" .po)
