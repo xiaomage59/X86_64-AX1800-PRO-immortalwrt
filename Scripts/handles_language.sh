@@ -1,5 +1,5 @@
 #!/bin/bash
-# 终极解决方案 - 修复验证误报和文件缺失问题
+# 修复正则表达式问题并优化逻辑
 
 # 动态获取架构
 TARGET_ARCH=$(find "$GITHUB_WORKSPACE/wrt/staging_dir" -maxdepth 1 -type d -name "target-*" | head -n1 | xargs basename | sed 's/target-//')
@@ -45,14 +45,14 @@ get_lmo_name() {
   echo "${plugin#luci-*}" | sed -E 's/^(app|theme|lib)-//'
 }
 
-# 增强版插件查找（支持多级目录和别名）
+# 增强版插件查找（简化正则表达式）
 find_plugin_dir() {
   local plugin=$1
   local search_name="${plugin#luci-}"
   
   for path in "${SEARCH_PATHS[@]}"; do
-    # 递归查找匹配插件名的目录（支持子目录）
-    found=$(find "$path" -type d -iregex ".*/${plugin}\(-[a-z0-9]+)*" -print -quit)
+    # 使用更简单的通配符匹配
+    found=$(find "$path" -type d -iname "*${plugin}*" -print -quit)
     [ -n "$found" ] && echo "$found" && return 0
   done
   return 1
