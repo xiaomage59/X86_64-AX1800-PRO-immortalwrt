@@ -1,5 +1,5 @@
 #!/bin/bash
-# 全自动语言包处理脚本 - 智能路径检测版
+# 全自动语言包处理脚本 - 精准缺失处理版
 
 # 动态获取架构
 TARGET_ARCH=$(find "$GITHUB_WORKSPACE/wrt/staging_dir" -maxdepth 1 -type d -name "target-*" | head -n1 | xargs basename | sed 's/target-//')
@@ -20,6 +20,12 @@ echo "===== 语言包处理开始 ====="
 echo "目标架构: $TARGET_ARCH"
 echo "子架构: $SUBTARGET"
 
+# 获取现有语言包列表
+get_existing_lmo() {
+    find "$BASE_I18N_DIR" -name "*.zh-cn.lmo" -exec basename {} \; | \
+    sed 's/\.zh-cn\.lmo$//'
+}
+
 # 智能路径分析函数
 analyze_plugin_structure() {
     local plugin=$1
@@ -30,6 +36,8 @@ analyze_plugin_structure() {
         "luci/apps/${plugin#luci-app-}/i18n"
         "luci/modules/${plugin#luci-app-}/i18n"
         "luci/controller/${plugin#luci-app-}/i18n"
+        "i18n"
+        "po"
     )
     
     for path in "${std_paths[@]}"; do
@@ -39,25 +47,13 @@ analyze_plugin_structure() {
         fi
     done
     
-    # 2. 检查Makefile中的路径线索
-    if [ -f "$plugin_dir/Makefile" ]; then
-        local makefile_path=$(grep -oP 'PO_DIR\s*:?=\s*\K[^\s]+' "$plugin_dir/Makefile" 2>/dev/null)
-        if [ -n "$makefile_path" ]; then
-            echo "$makefile_path" | sed 's|^\./||'
-            return 0
-        fi
-    fi
-    
-    # 3. 默认返回标准路径
+    # 2. 默认返回标准路径
     echo "luci/apps/${plugin#luci-app-}/i18n"
 }
 
 # 核心处理函数
-process_plugin() {
+process_missing_plugin() {
     local plugin=$1
-    
-    # 跳过主题包
-    [[ $plugin == luci-theme-* ]] && return 0
     
     # 查找插件目录
     local plugin_dir=$(find "$GITHUB_WORKSPACE/wrt/"{package,feeds} -type d -name "$plugin" -print -quit)
@@ -79,9 +75,8 @@ process_plugin() {
     
     # 转换语言包
     if po2lmo "$po_file" "$lmo_file"; then
-        echo "[成功] $plugin → ${lmo_file#$BASE_I18N_DIR/}"
-        # 记录安装路径
-        echo "${lmo_file#$BASE_I18N_DIR/}" >> "$LOG_DIR/installed_paths.txt"
+        echo "[成功安装] $plugin → ${lmo_file#$BASE_I18N_DIR/}"
+        echo "${lmo_file#$BASE_I18N_DIR/}" >> "$LOG_DIR/new_installed.txt"
         return 0
     else
         echo "[失败] 转换失败: $po_file"
@@ -91,29 +86,54 @@ process_plugin() {
 }
 
 # 主处理流程
-echo "===== 开始处理插件 ====="
-> "$LOG_DIR/installed_paths.txt"  # 清空安装路径记录
+echo "===== 扫描现有语言包 ====="
+EXISTING_LMO=$(get_existing_lmo)
+echo "已存在语言包数量: $(wc -w <<< "$EXISTING_LMO")"
+
+echo "===== 筛选缺失语言包的插件 ====="
+> "$LOG_DIR/new_installed.txt"  # 清空新安装记录
+MISSING_COUNT=0
+PROCESSED_COUNT=0
 
 for plugin in $WRT_LIST; do
-    process_plugin "$plugin"
+    # 跳过主题插件
+    [[ $plugin == luci-theme-* ]] && continue
+    
+    # 获取插件基础名称
+    base_name=$(sed -E 's/^luci-(app|theme)-//' <<< "$plugin")
+    
+    # 检查是否已存在语言包
+    if grep -q "^${base_name}$" <<< "$EXISTING_LMO"; then
+        echo "[已存在] 跳过 $plugin (已有语言包)"
+        continue
+    fi
+    
+    echo "[处理中] 缺失语言包的插件: $plugin"
+    if process_missing_plugin "$plugin"; then
+        ((PROCESSED_COUNT++))
+    fi
+    ((MISSING_COUNT++))
 done
 
 # 生成构建系统集成文件
-echo "===== 生成构建系统集成文件 ====="
+echo "===== 生成构建系统配置 ====="
 {
     echo "# 自动生成的语言包包含列表"
     echo "# 以下目录需要包含在固件打包系统中"
     echo ""
-    sort -u "$LOG_DIR/installed_paths.txt" | while read path; do
+    sort -u "$LOG_DIR/new_installed.txt" | while read path; do
         dir=$(dirname "$path")
         echo "staging_dir/i18n_dirs += $dir"
     done
 } > "$GITHUB_WORKSPACE/wrt/staging_dir/luci-i18n-dirs.mk"
 
-# 最终验证
-echo "===== 安装验证 ====="
-find "$BASE_I18N_DIR" -name "*.zh-cn.lmo" > "$LOG_DIR/installed_lmo_files.txt"
-echo "已安装语言包数量: $(wc -l < "$LOG_DIR/installed_lmo_files.txt")"
-echo "详细清单已保存到: $LOG_DIR/installed_lmo_files.txt"
+# 最终报告
+echo "===== 处理结果报告 ====="
+echo "总插件数量: $(wc -w <<< "$WRT_LIST")"
+echo "缺失语言包的插件数量: $MISSING_COUNT"
+echo "成功处理的插件数量: $PROCESSED_COUNT"
+echo "新安装语言包清单: $LOG_DIR/new_installed.txt"
+find "$BASE_I18N_DIR" -name "*.zh-cn.lmo" > "$LOG_DIR/final_lmo_list.txt"
+echo "最终语言包总数: $(wc -l < "$LOG_DIR/final_lmo_list.txt")"
 
 echo "===== 语言包处理完成 ====="
