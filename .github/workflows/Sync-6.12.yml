@@ -18,7 +18,7 @@ jobs:
           git config --global user.email "openwrt-bot@users.noreply.github.com"
           git remote add b-repo https://github.com/davidtall/OpenWRT-CI.git
           git fetch b-repo
-          git merge b-repo/main --no-edit  # 确认 B 仓库的分支名是 main
+          git merge b-repo/main --no-edit --allow-unrelated-histories
           git push origin 6.12
 
       - name: Notify on failure
@@ -26,9 +26,19 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: "⚠️ Sync failed! Check the workflow run."
-            })
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: "⚠️ Sync failed! Check the workflow run."
+              })
+            } catch (error) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: "Sync failed on " + new Date().toISOString(),
+                body: "⚠️ Sync failed! Check the workflow run.\n\n" +
+                      "Workflow run: " + context.serverUrl + "/" + context.repo.owner + "/" + context.repo.repo + "/actions/runs/" + context.runId
+              })
+            }
