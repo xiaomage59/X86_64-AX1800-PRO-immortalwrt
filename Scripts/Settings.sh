@@ -67,7 +67,7 @@ if [[ $WRT_TARGET != *"X86"* ]]; then
  	#------------2025.05.24---------------￥
   	#（初始-正常）echo "CONFIG_TARGET_OPTIMIZATION=\"-O2 -pipe -march=armv8-a+crypto+crc -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53\"" >> ./.config
 	#（尝试-失败）echo "CONFIG_TARGET_OPTIMIZATION=\"-O3 -pipe -march=armv8-a+crypto+crc -mcpu=cortex-a53 -mtune=cortex-a53\"" >> ./.config
- 	#（尝试-等待）echo 'CONFIG_TARGET_OPTIMIZATION=\"-O3 -pipe -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53"' >> ./.config
- 	echo 'CONFIG_TARGET_OPTIMIZATION="-O3 -pipe -mcpu=cortex-a53 -mtune=cortex-a53"' >> ./.config
+ 	echo 'CONFIG_TARGET_OPTIMIZATION=\"-O3 -pipe -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53"' >> ./.config
+ 	#（尝试-成功）echo 'CONFIG_TARGET_OPTIMIZATION="-O3 -pipe -mcpu=cortex-a53 -mtune=cortex-a53"' >> ./.config
   	#------------2025.05.24---------------￥
 fi
