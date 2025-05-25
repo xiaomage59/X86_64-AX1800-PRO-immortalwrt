@@ -53,22 +53,12 @@ if [[ $WRT_TARGET == *"QUALCOMMAX"* ]]; then
 	#设置NSS版本
 	echo "CONFIG_NSS_FIRMWARE_VERSION_11_4=n" >> ./.config
 	echo "CONFIG_NSS_FIRMWARE_VERSION_12_5=y" >> ./.config
- 	#echo "CONFIG_NSS_FIRMWARE_VERSION_12_2=y" >> ./.config #如上一行12_5断流则启用本行
+	#开启sqm-nss插件
+	echo "CONFIG_PACKAGE_luci-app-sqm=y" >> ./.config
+	echo "CONFIG_PACKAGE_sqm-scripts-nss=y" >> ./.config
 	#无WIFI配置调整Q6大小
 	if [[ "${WRT_CONFIG,,}" == *"wifi"* && "${WRT_CONFIG,,}" == *"no"* ]]; then
 		find $DTS_PATH -type f ! -iname '*nowifi*' -exec sed -i 's/ipq\(6018\|8074\).dtsi/ipq\1-nowifi.dtsi/g' {} +
 		echo "qualcommax set up nowifi successfully!"
 	fi
-fi
-
-#编译器优化
-if [[ $WRT_TARGET != *"X86"* ]]; then
-	echo "CONFIG_TARGET_OPTIONS=y" >> ./.config
- 	#------------2025.05.24---------------￥
-  	#（初始-正常，体积较大）echo "CONFIG_TARGET_OPTIMIZATION=\"-O2 -pipe -march=armv8-a+crypto+crc -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53\"" >> ./.config
-	#（尝试-失败）echo "CONFIG_TARGET_OPTIMIZATION=\"-O3 -pipe -march=armv8-a+crypto+crc -mcpu=cortex-a53 -mtune=cortex-a53\"" >> ./.config
- 	#（第一次失败-第二次尝试成功，体积最小，暂按此代码）echo 'CONFIG_TARGET_OPTIMIZATION=\"-O3 -pipe -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53"' >> ./.config
-  	echo 'CONFIG_TARGET_OPTIMIZATION=\"-O3 -pipe -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53"' >> ./.config
- 	#（尝试-成功，体积最大）echo 'CONFIG_TARGET_OPTIMIZATION="-O3 -pipe -mcpu=cortex-a53 -mtune=cortex-a53"' >> ./.config
-  	#------------2025.05.24---------------￥
 fi
