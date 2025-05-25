@@ -65,10 +65,10 @@ fi
 if [[ $WRT_TARGET != *"X86"* ]]; then
 	echo "CONFIG_TARGET_OPTIONS=y" >> ./.config
  	#------------2025.05.24---------------￥
-  	#（初始-正常）echo "CONFIG_TARGET_OPTIMIZATION=\"-O2 -pipe -march=armv8-a+crypto+crc -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53\"" >> ./.config
-   	echo "CONFIG_TARGET_OPTIMIZATION=\"-O2 -pipe -march=armv8-a+crypto+crc -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53\"" >> ./.config
+  	#（初始-正常，体积较大）echo "CONFIG_TARGET_OPTIMIZATION=\"-O2 -pipe -march=armv8-a+crypto+crc -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53\"" >> ./.config
 	#（尝试-失败）echo "CONFIG_TARGET_OPTIMIZATION=\"-O3 -pipe -march=armv8-a+crypto+crc -mcpu=cortex-a53 -mtune=cortex-a53\"" >> ./.config
- 	#（第一次失败-第二次尝试中）echo 'CONFIG_TARGET_OPTIMIZATION=\"-O3 -pipe -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53"' >> ./.config
- 	#（尝试-成功）echo 'CONFIG_TARGET_OPTIMIZATION="-O3 -pipe -mcpu=cortex-a53 -mtune=cortex-a53"' >> ./.config
+ 	#（第一次失败-第二次尝试成功，体积最小，暂按此代码）echo 'CONFIG_TARGET_OPTIMIZATION=\"-O3 -pipe -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53"' >> ./.config
+  	echo 'CONFIG_TARGET_OPTIMIZATION=\"-O3 -pipe -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53"' >> ./.config
+ 	#（尝试-成功，体积最大）echo 'CONFIG_TARGET_OPTIMIZATION="-O3 -pipe -mcpu=cortex-a53 -mtune=cortex-a53"' >> ./.config
   	#------------2025.05.24---------------￥
 fi
