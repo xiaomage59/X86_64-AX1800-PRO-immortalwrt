@@ -190,5 +190,11 @@ UPDATE_PACKAGE "luci-app-unishare" "shidahuilang/openwrt-package" "Immortalwrt" 
 #luci-app-athena-led-雅典娜led屏幕显示（第一个源显示效果不好）
 #UPDATE_PACKAGE "luci-app-athena-led" "haipengno1/luci-app-athena-led" "main"
 UPDATE_PACKAGE "luci-app-athena-led" "NONGFAH/luci-app-athena-led" "main"
-
 #-------------------2025.04.12-测试-----------------#
+# 添加雅典娜LED执行权限
+if [ -d "luci-app-athena-led" ]; then
+    chmod +x luci-app-athena-led/root/etc/init.d/athena_led
+    chmod +x luci-app-athena-led/root/usr/sbin/athena-led
+    echo "Added execute permissions for athena_led files."
+fi
+#-------------------2025.05.31-测试-----------------#
