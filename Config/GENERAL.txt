@@ -49,6 +49,8 @@ CONFIG_PACKAGE_kmod-usb-net-cdc-subset=y
 CONFIG_PACKAGE_kmod-usb-net-huawei-cdc-ncm=y
 CONFIG_PACKAGE_kmod-usb-net-ipheth=y
 CONFIG_PACKAGE_kmod-usb-net-qmi-wwan=y
+#CONFIG_PACKAGE_kmod-usb-net-qmi-wwan-fibocom=y  #为 Fibocom（广和通） 品牌的LTE模块提供QMI协议支持
+#CONFIG_PACKAGE_kmod-usb-net-qmi-wwan-quectel=y  #为 Quectel（移远通信） 品牌的LTE模块（如EC20、EP06等）提供QMI协议支持
 CONFIG_PACKAGE_kmod-usb-net-rndis=y
 CONFIG_PACKAGE_kmod-usb-net-rtl8150=y
 CONFIG_PACKAGE_kmod-usb-net-rtl8152=y
@@ -73,6 +75,7 @@ CONFIG_PACKAGE_gdisk=y
 CONFIG_PACKAGE_htop=y
 CONFIG_PACKAGE_iperf3=y
 CONFIG_PACKAGE_ip-full=y
+#CONFIG_PACKAGE_libimobiledevice=y  #libimobiledevice 是一个开源的跨平台库，用于与 Apple iOS 设备（iPhone、iPad、iPod Touch）通信，支持协议级别的交互
 CONFIG_PACKAGE_lsblk=y
 CONFIG_PACKAGE_luci-base=y
 CONFIG_PACKAGE_luci-compat=y
@@ -86,6 +89,8 @@ CONFIG_PACKAGE_nand-utils=y
 CONFIG_PACKAGE_openssh-sftp-server=y
 CONFIG_PACKAGE_sfdisk=y
 CONFIG_PACKAGE_sgdisk=y
+#CONFIG_PACKAGE_usbmuxd=y  #若连接了 iOS 设备，usbmuxd 负责管理通信，而 usbutils 可用于验证设备是否被识别
+#CONFIG_PACKAGE_usbutils=y #若连接了 iOS 设备，usbmuxd 负责管理通信，而 usbutils 可用于验证设备是否被识别
 
 #-----------------以下自行增加的插件及组件-----------------#
 #zram-swap内存压缩
