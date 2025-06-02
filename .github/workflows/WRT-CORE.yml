@@ -193,13 +193,26 @@ jobs:
       - name: Organize Files
         if: env.WRT_TEST != 'true'
         run: |
-          cd ./wrt/bin/targets/*/*
+          # 进入固件输出目录（使用绝对路径确保可靠性）
+          cd $GITHUB_WORKSPACE/wrt/bin/targets/*/*
           cat sha256sums
-          cp ../../../.config build.config
+          
+          # 使用绝对路径复制配置文件
+          cp $GITHUB_WORKSPACE/wrt/.config build.config
+          
+          # 创建包目录并收集IPK文件
           mkdir -p packages
-          mv -f ../../../packages/*/*/*.ipk packages
+          if [ -d "$GITHUB_WORKSPACE/wrt/bin/packages" ]; then
+            find $GITHUB_WORKSPACE/wrt/bin/packages -name "*.ipk" -exec mv -f {} packages/ \;
+          else
+            echo "Warning: No packages directory found at $GITHUB_WORKSPACE/wrt/bin/packages"
+          fi
+          
+          # 打包并清理
           tar -zcf Packages.tar.gz packages
           rm -rf packages feeds.buildinfo version.buildinfo
+          
+          # 设置环境变量（使用绝对路径）
           echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 # ========== 以上新增文件整理步骤 ========== #
 
