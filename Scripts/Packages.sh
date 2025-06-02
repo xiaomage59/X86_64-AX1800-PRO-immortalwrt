@@ -198,3 +198,28 @@ if [ -d "luci-app-athena-led" ]; then
     echo "Added execute permissions for athena_led files."
 fi
 #-------------------2025.05.31-测试-----------------#
+
+#-------------------2025.06.02-语言包处理-----------------#
+# 复制中文语言包到对应目录
+copy_lmo() {
+    local app_name=$1
+    local source_file="$GITHUB_WORKSPACE/Scripts/${app_name}.zh-cn.lmo"
+    local target_dir="./luci-app-${app_name}/po/zh-cn"
+    
+    if [ -f "$source_file" ]; then
+        mkdir -p "$target_dir"
+        cp -f "$source_file" "$target_dir/luci-app-${app_name}.zh-cn.lmo"
+        echo "Copied ${app_name}.zh-cn.lmo to $target_dir"
+    else
+        echo "Warning: ${source_file} not found!"
+    fi
+}
+
+# 进入package目录操作
+cd $GITHUB_WORKSPACE/wrt/package/
+
+# 复制三个语言包文件
+copy_lmo "linkease"
+copy_lmo "quickstart"
+copy_lmo "unishare"
+#-------------------2025.06.02-语言包处理-----------------#
