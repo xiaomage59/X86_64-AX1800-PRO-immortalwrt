@@ -196,7 +196,7 @@ CONFIG_PACKAGE_luci-app-diskman=y
 #memos记事本
 #CONFIG_PACKAGE_luci-app-memos=y
 #音乐服务器
-CONFIG_PACKAGE_luci-app-navidrome=y
+#CONFIG_PACKAGE_luci-app-navidrome=y
 #快速设置
 #CONFIG_PACKAGE_luci-app-quickstart=y
 #主题界面luci-theme-design
