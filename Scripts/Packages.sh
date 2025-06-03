@@ -200,16 +200,45 @@ fi
 #-------------------2025.05.31-测试-----------------#
 
 #-------------------2025.06.02-语言包处理-----------------#
-# 复制中文语言包到对应目录
-copy_lmo() {
+# 复制中文语言包源文件到对应目录
+copy_po() {
     local app_name=$1
-    local source_file="$GITHUB_WORKSPACE/Scripts/${app_name}.zh-cn.lmo"
+    local source_file="$GITHUB_WORKSPACE/Scripts/${app_name}.zh-cn.po"
     local target_dir="./luci-app-${app_name}/po/zh-cn"
     
     if [ -f "$source_file" ]; then
         mkdir -p "$target_dir"
-        cp -f "$source_file" "$target_dir/luci-app-${app_name}.zh-cn.lmo"
-        echo "Copied ${app_name}.zh-cn.lmo to $target_dir"
+        cp -f "$source_file" "$target_dir/${app_name}.po"
+        echo "Copied ${app_name}.zh-cn.po to $target_dir/${app_name}.po"
+        
+        # 确保Makefile存在
+        if [ ! -f "$target_dir/Makefile" ]; then
+            cat > "$target_dir/Makefile" <<EOF
+include \$(TOPDIR)/rules.mk
+
+PKG_NAME:=luci-i18n-${app_name}-zh-cn
+PKG_VERSION:=1
+PKG_RELEASE:=1
+
+include \$(INCLUDE_DIR)/package.mk
+
+define Package/luci-i18n-${app_name}-zh-cn
+  SECTION:=luci
+  CATEGORY:=LuCI
+  TITLE:=Chinese translation for luci-app-${app_name}
+  DEPENDS:=+luci-app-${app_name}
+  PKGARCH:=all
+endef
+
+define Package/luci-i18n-${app_name}-zh-cn/install
+	\$(INSTALL_DIR) \$(1)/usr/lib/lua/luci/i18n
+	\$(INSTALL_DATA) \$(PKG_BUILD_DIR)/${app_name}.zh-cn.lmo \$(1)/usr/lib/lua/luci/i18n/
+endef
+
+\$(eval \$(call BuildPackage,luci-i18n-${app_name}-zh-cn))
+EOF
+            echo "Created Makefile for ${app_name} language pack"
+        fi
     else
         echo "Warning: ${source_file} not found!"
     fi
@@ -218,8 +247,8 @@ copy_lmo() {
 # 进入package目录操作
 cd $GITHUB_WORKSPACE/wrt/package/
 
-# 复制三个语言包文件
-copy_lmo "linkease"
-copy_lmo "quickstart"
-copy_lmo "unishare"
+# 复制三个语言包源文件
+copy_po "linkease"
+copy_po "quickstart"
+copy_po "unishare"
 #-------------------2025.06.02-语言包处理-----------------#
