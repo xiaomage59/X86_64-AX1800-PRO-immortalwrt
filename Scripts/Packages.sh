@@ -225,14 +225,15 @@ include \$(INCLUDE_DIR)/package.mk
 define Package/luci-i18n-${app_name}-zh-cn
   SECTION:=luci
   CATEGORY:=LuCI
-  TITLE:=Chinese translation for luci-app-${app_name}
+  TITLE:=Chinese translation for ${app_name}
   DEPENDS:=+luci-app-${app_name}
   PKGARCH:=all
 endef
 
+# 关键修改：指定目标文件名
 define Package/luci-i18n-${app_name}-zh-cn/install
 	\$(INSTALL_DIR) \$(1)/usr/lib/lua/luci/i18n
-	\$(INSTALL_DATA) \$(PKG_BUILD_DIR)/${app_name}.zh-cn.lmo \$(1)/usr/lib/lua/luci/i18n/
+	\$(INSTALL_DATA) \$(PKG_BUILD_DIR)/${app_name}.zh-cn.lmo \$(1)/usr/lib/lua/luci/i18n/${app_name}.zh-cn.lmo
 endef
 
 \$(eval \$(call BuildPackage,luci-i18n-${app_name}-zh-cn))
