@@ -200,6 +200,7 @@ fi
 #-------------------2025.05.31-测试-----------------#
 
 #-------------------2025.06.02-语言包处理-----------------#
+
 # 复制中文语言包源文件到对应目录
 copy_po() {
     local app_name=$1
@@ -230,7 +231,6 @@ define Package/luci-i18n-${app_name}-zh-cn
   PKGARCH:=all
 endef
 
-# 关键修改：指定目标文件名
 define Package/luci-i18n-${app_name}-zh-cn/install
 	\$(INSTALL_DIR) \$(1)/usr/lib/lua/luci/i18n
 	\$(INSTALL_DATA) \$(PKG_BUILD_DIR)/${app_name}.zh-cn.lmo \$(1)/usr/lib/lua/luci/i18n/${app_name}.zh-cn.lmo
@@ -239,7 +239,15 @@ endef
 \$(eval \$(call BuildPackage,luci-i18n-${app_name}-zh-cn))
 EOF
             echo "Created Makefile for ${app_name} language pack"
+            
+            # 关键改进：确保工具链可用
+            echo "CONFIG_PO2LMO=y" >> "$GITHUB_WORKSPACE/wrt/.config"
         fi
+        
+        # 关键改进：禁用原始语言包编译
+        sed -i "/CONFIG_PACKAGE_luci-app-${app_name}-zh-cn/d" "$GITHUB_WORKSPACE/wrt/.config"
+        echo "CONFIG_PACKAGE_luci-app-${app_name}-zh-cn=n" >> "$GITHUB_WORKSPACE/wrt/.config"
+        echo "Disabled original language pack for ${app_name}"
     else
         echo "Warning: ${source_file} not found!"
     fi
