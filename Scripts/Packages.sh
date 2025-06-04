@@ -201,20 +201,37 @@ fi
 
 #-------------------2025.06.02-语言包处理-----------------#
 
-#-------------------2025.06.02-语言包处理-----------------#
-# 安全语言包处理函数
+# 安全语言包处理函数 - 增强版
 safe_install_lmo() {
     local app_name=$1
     local lmo_file="$GITHUB_WORKSPACE/Scripts/${app_name}.zh-cn.lmo"
-    local target_dir="$GITHUB_WORKSPACE/wrt/package/luci-app-${app_name}/files/usr/lib/lua/luci/i18n/"
+    local app_dir="./luci-app-${app_name}"
+    local target_path="usr/lib/lua/luci/i18n/${app_name}.zh-cn.lmo"
     
     # 创建目标目录
-    mkdir -p "$target_dir"
+    mkdir -p "${app_dir}/files/usr/lib/lua/luci/i18n/"
     
     if [ -f "$lmo_file" ]; then
-        # 直接复制编译好的.lmo文件
-        cp -f "$lmo_file" "$target_dir/${app_name}.zh-cn.lmo"
-        echo "Installed ${app_name}.zh-cn.lmo to $target_dir"
+        # 1. 复制文件到目标位置
+        cp -f "$lmo_file" "${app_dir}/files/${target_path}"
+        
+        # 2. 在Makefile中注册文件
+        if [ -f "${app_dir}/Makefile" ]; then
+            # 确保安装指令存在
+            if ! grep -q "INSTALL_DIR.*i18n" "${app_dir}/Makefile"; then
+                # 添加安装指令
+                sed -i "/define Package\/luci-app-${app_name}\/install/a \\\t\$(INSTALL_DIR) \$(1)/usr/lib/lua/luci/i18n" "${app_dir}/Makefile"
+            fi
+            
+            # 添加文件安装指令
+            if ! grep -q "${target_path}" "${app_dir}/Makefile"; then
+                sed -i "/define Package\/luci-app-${app_name}\/install/a \\\t\$(INSTALL_DATA) \$(PKG_BUILD_DIR)/${target_path} \$(1)/${target_path}" "${app_dir}/Makefile"
+            fi
+            
+            echo "Updated ${app_dir}/Makefile to include ${target_path}"
+        fi
+        
+        echo "Installed ${app_name}.zh-cn.lmo to ${app_dir}/files/${target_path}"
     else
         echo "Warning: ${lmo_file} not found! Skipping ${app_name}"
     fi
@@ -227,14 +244,4 @@ cd $GITHUB_WORKSPACE/wrt/package/
 safe_install_lmo "linkease"
 safe_install_lmo "quickstart"
 safe_install_lmo "unishare"
-
-# 修复filebrowser问题（恢复原始状态）
-if [ -d "filebrowser" ]; then
-    # 确保目录结构恢复
-    if [ ! -d "./filebrowser/files/etc/filebrowser" ]; then
-        mkdir -p ./filebrowser/files/etc/filebrowser
-        echo "Restored /etc/filebrowser directory"
-    fi
-fi
-
 #-------------------2025.06.02-语言包处理-----------------#
