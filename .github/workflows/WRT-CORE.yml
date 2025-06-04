@@ -189,6 +189,80 @@ jobs:
 
           make -j$(nproc) || make -j$(nproc) V=s
 
+     
+      # ============= 添加语言包注入步骤 ============= #
+      - name: Inject Language Packs
+        if: env.WRT_TEST != 'true'
+        run: |
+          echo "=== 开始注入语言包 ==="
+          
+          # 定义语言包注入函数
+          inject_language_packs() {
+            # 定位固件根文件系统目录
+            local rootfs_dir=$(find ./wrt/bin/targets -type d -name "root-*" -print -quit)
+            
+            if [ -z "$rootfs_dir" ]; then
+              echo "::error::RootFS directory not found! Language pack injection failed."
+              return 1
+            fi
+            
+            # 目标目录
+            local target_dir="$rootfs_dir/usr/lib/lua/luci/i18n/"
+            mkdir -p "$target_dir"
+            echo "Located rootfs: $rootfs_dir"
+            
+            # 复制语言包
+            local apps=("linkease" "quickstart" "unishare")
+            for app in "${apps[@]}"; do
+              local source_file="$GITHUB_WORKSPACE/Scripts/${app}.zh-cn.lmo"
+              
+              if [ -f "$source_file" ]; then
+                cp -f "$source_file" "$target_dir/${app}.zh-cn.lmo"
+                echo "Injected ${app}.zh-cn.lmo to $target_dir"
+              else
+                echo "::warning file=${source_file}::Language pack not found for ${app}"
+              fi
+            done
+            
+            # 重新生成固件包
+            echo "Repacking firmware images..."
+            find ./wrt/bin/targets -name "*.tar" | while read tar_file; do
+              local dir=$(dirname "$tar_file")
+              local base_name=$(basename "$tar_file")
+              
+              echo "Processing $base_name..."
+              
+              # 创建临时目录
+              local temp_dir=$(mktemp -d)
+              
+              # 解压固件
+              tar -xf "$tar_file" -C "$temp_dir"
+              
+              # 查找所有 rootfs 目录
+              find "$temp_dir" -name "root" -type d | while read device_root; do
+                # 创建语言包目录
+                local lng_dir="$device_root/usr/lib/lua/luci/i18n/"
+                mkdir -p "$lng_dir"
+                
+                # 复制语言包
+                cp -f $target_dir/*.lmo "$lng_dir"
+                echo "Copied language packs to $lng_dir"
+              done
+              
+              # 重新打包
+              tar -cf "$tar_file" -C "$temp_dir" .
+              echo "Repacked: $tar_file"
+              
+              # 清理临时目录
+              rm -rf "$temp_dir"
+            done
+            
+            echo "=== 语言包注入完成 ==="
+          }
+          
+          # 执行注入
+          inject_language_packs
+
 # ========== 以下新增文件整理步骤 ========== #
       - name: Organize Files
         if: env.WRT_TEST != 'true'
