@@ -106,6 +106,49 @@ jobs:
           if [ -f "$PROJECT_MIRRORS_FILE" ]; then
             sed -i '/.cn\//d; /tencent/d; /aliyun/d' "$PROJECT_MIRRORS_FILE"
           fi
+      
+      # ========== 语言包处理 - 在编译前添加 ========== #
+      - name: Prepare First-Boot Language Pack Installer
+        run: |
+          echo "=== 准备首次启动语言包安装脚本 ==="
+          
+          # 创建临时存储目录
+          mkdir -p ./wrt/files/tmp/langpacks
+          
+          # 复制语言包到临时目录
+          cp -f $GITHUB_WORKSPACE/Scripts/linkease.zh-cn.lmo ./wrt/files/tmp/langpacks/
+          cp -f $GITHUB_WORKSPACE/Scripts/quickstart.zh-cn.lmo ./wrt/files/tmp/langpacks/
+          cp -f $GITHUB_WORKSPACE/Scripts/unishare.zh-cn.lmo ./wrt/files/tmp/langpacks/
+          
+          # 创建自毁脚本
+          cat << 'SCRIPT_CONTENT' > ./wrt/files/etc/uci-defaults/99-install-langpacks
+#!/bin/sh
+
+echo "正在安装语言包..."
+mkdir -p /usr/lib/lua/luci/i18n/
+cp /tmp/langpacks/*.lmo /usr/lib/lua/luci/i18n/
+
+# 验证安装
+if ls /usr/lib/lua/luci/i18n/*.lmo >/dev/null 2>&1; then
+    echo "语言包安装成功"
+else
+    echo "语言包安装失败!" >&2
+fi
+
+# 清理痕迹
+echo "清理临时文件..."
+rm -rf /tmp/langpacks
+rm -f "$0"  # 删除脚本自身
+
+exit 0
+SCRIPT_CONTENT
+          
+          # 设置脚本权限
+          chmod +x ./wrt/files/etc/uci-defaults/99-install-langpacks
+          
+          echo "语言包安装脚本已准备"
+      
+      # ========== 原有编译步骤 ========== #
 
       - name: Check Scripts
         run: |
@@ -188,51 +231,6 @@ jobs:
           cd ./wrt/
 
           make -j$(nproc) || make -j$(nproc) V=s
-
-     
-      # ============= 添加语言包注入步骤 ============= #
-      - name: Prepare First-Boot Language Pack Installer
-        run: |
-          echo "=== 准备首次启动语言包安装脚本 ==="
-          
-          # 创建临时存储目录
-          mkdir -p ./wrt/files/tmp/langpacks
-          
-          # 复制语言包到临时目录
-          cp -f $GITHUB_WORKSPACE/Scripts/linkease.zh-cn.lmo ./wrt/files/tmp/langpacks/
-          cp -f $GITHUB_WORKSPACE/Scripts/quickstart.zh-cn.lmo ./wrt/files/tmp/langpacks/
-          cp -f $GITHUB_WORKSPACE/Scripts/unishare.zh-cn.lmo ./wrt/files/tmp/langpacks/
-          
-          # 创建自毁脚本
-          cat > ./wrt/files/etc/uci-defaults/99-install-langpacks <<'EOF'
-#!/bin/sh
-
-# 安装语言包
-echo "正在安装语言包..."
-
-mkdir -p /usr/lib/lua/luci/i18n/
-
-cp /tmp/langpacks/*.lmo /usr/lib/lua/luci/i18n/
-
-# 验证安装
-if ls /usr/lib/lua/luci/i18n/*.lmo >/dev/null 2>&1; then
-    echo "语言包安装成功"
-else
-    echo "语言包安装失败!" >&2
-fi
-
-# 清理痕迹
-echo "清理临时文件..."
-rm -rf /tmp/langpacks
-rm -f "$0"  # 删除脚本自身
-
-exit 0
-EOF
-          
-          # 设置脚本权限
-          chmod +x ./wrt/files/etc/uci-defaults/99-install-langpacks
-          
-          echo "语言包安装脚本已准备"
 
 # ========== 以下新增文件整理步骤 ========== #
       - name: Organize Files
