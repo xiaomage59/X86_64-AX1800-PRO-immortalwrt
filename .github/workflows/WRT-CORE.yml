@@ -107,42 +107,33 @@ jobs:
             sed -i '/.cn\//d; /tencent/d; /aliyun/d' "$PROJECT_MIRRORS_FILE"
           fi
       
-      # ========== 语言包处理 - 在编译前添加 ========== #
-      
-      - name: Prepare Language Pack Installer
+# ========== 语言包处理 - 必须在 Clone Code 之后（确保 ./wrt 目录存在）；在 Check Scripts 之前（避免被dos2unix处理） ========== #
+
+      - name: Prepare Language Packs
         run: |
-          # 创建必要的目录结构
-          mkdir -p ./wrt/files/tmp/langpacks
-          mkdir -p ./wrt/files/etc/uci-defaults
+          # 创建目标目录结构
+          mkdir -p ./wrt/files/usr/lib/lua/luci/i18n/
           
-          # 复制语言包文件（简化版）
-          cp "$GITHUB_WORKSPACE/Scripts/linkease.zh-cn.lmo" ./wrt/files/tmp/langpacks/
-          cp "$GITHUB_WORKSPACE/Scripts/quickstart.zh-cn.lmo" ./wrt/files/tmp/langpacks/
-          cp "$GITHUB_WORKSPACE/Scripts/unishare.zh-cn.lmo" ./wrt/files/tmp/langpacks/
+          # 复制语言包文件到目标目录（直接打包进固件）
+          cp -v "$GITHUB_WORKSPACE/Scripts/linkease.zh-cn.lmo" ./wrt/files/usr/lib/lua/luci/i18n/
+          cp -v "$GITHUB_WORKSPACE/Scripts/quickstart.zh-cn.lmo" ./wrt/files/usr/lib/lua/luci/i18n/
+          cp -v "$GITHUB_WORKSPACE/Scripts/unishare.zh-cn.lmo" ./wrt/files/usr/lib/lua/luci/i18n/
           
-          # 使用安全的逐行写入方法创建安装脚本
-          # 这样可以完全避免heredoc的YAML解析问题
-          echo '#!/bin/sh' > ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo 'logger -t langpacks "Starting language pack installation"' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo 'mkdir -p /usr/lib/lua/luci/i18n/ || {' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo '    logger -t langpacks "ERROR: Failed to create target directory"' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo '    exit 1' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo '}' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo 'if cp /tmp/langpacks/*.lmo /usr/lib/lua/luci/i18n/; then' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo '    logger -t langpacks "Language packs installed successfully"' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo 'else' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo '    logger -t langpacks "ERROR: Failed to copy language packs"' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo '    exit 1' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo 'fi' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo 'rm -rf /tmp/langpacks' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo 'rm -f "$0"' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo 'exit 0' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
-          
-          # 设置执行权限
-          chmod +x ./wrt/files/etc/uci-defaults/99-install-langpacks
-          echo "Language pack installer created successfully"
-      
-      # ========== 原有编译步骤 ========== #
+          # 验证复制结果
+          ls -l ./wrt/files/usr/lib/lua/luci/i18n/
+          echo "语言包已直接放置在固件的 /usr/lib/lua/luci/i18n/ 目录"
+
+      - name: Verify Language Pack Placement
+        run: |
+          echo "验证语言包位置:"
+          ls -l ./wrt/files/usr/lib/lua/luci/i18n/*.lmo
+          [ $(ls ./wrt/files/usr/lib/lua/luci/i18n/*.lmo | wc -l) -eq 3 ] || {
+            echo "::error::语言包文件数量不正确"
+            exit 1
+          }
+          echo "验证通过：找到3个语言包文件"
+
+# ========== 以上语言包处理------以下原有编译步骤 ========== #
 
       - name: Check Scripts
         run: |
