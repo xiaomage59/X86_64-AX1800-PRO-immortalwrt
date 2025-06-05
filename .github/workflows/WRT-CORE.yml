@@ -191,99 +191,48 @@ jobs:
 
      
       # ============= 添加语言包注入步骤 ============= #
-      - name: Inject Language Packs
-        if: env.WRT_TEST != 'true'
+      - name: Prepare First-Boot Language Pack Installer
         run: |
-          echo "=== 开始注入语言包 ==="
+          echo "=== 准备首次启动语言包安装脚本 ==="
           
-          # 确保进入工作区根目录
-          cd $GITHUB_WORKSPACE
+          # 创建临时存储目录
+          mkdir -p ./wrt/files/tmp/langpacks
           
-          # 定位固件根文件系统目录
-          local rootfs_dirs=$(find ./wrt/bin/targets -type d -name "root" -print)
-          if [ -z "$rootfs_dirs" ]; then
-            # 如果找不到root目录，尝试查找解压后的rootfs
-            rootfs_dirs=$(find ./wrt/bin/targets -type d -path "*/packages/*/base-files" -print)
-          fi
+          # 复制语言包到临时目录
+          cp -f $GITHUB_WORKSPACE/Scripts/linkease.zh-cn.lmo ./wrt/files/tmp/langpacks/
+          cp -f $GITHUB_WORKSPACE/Scripts/quickstart.zh-cn.lmo ./wrt/files/tmp/langpacks/
+          cp -f $GITHUB_WORKSPACE/Scripts/unishare.zh-cn.lmo ./wrt/files/tmp/langpacks/
           
-          if [ -z "$rootfs_dirs" ]; then
-            echo "::error::RootFS directory not found! Language pack injection failed."
-            echo "搜索路径: $(find ./wrt/bin/targets -type d | head -n 10)"
-            exit 1
-          fi
+          # 创建自毁脚本
+          cat > ./wrt/files/etc/uci-defaults/99-install-langpacks <<'EOF'
+#!/bin/sh
+
+# 安装语言包
+echo "正在安装语言包..."
+
+mkdir -p /usr/lib/lua/luci/i18n/
+
+cp /tmp/langpacks/*.lmo /usr/lib/lua/luci/i18n/
+
+# 验证安装
+if ls /usr/lib/lua/luci/i18n/*.lmo >/dev/null 2>&1; then
+    echo "语言包安装成功"
+else
+    echo "语言包安装失败!" >&2
+fi
+
+# 清理痕迹
+echo "清理临时文件..."
+rm -rf /tmp/langpacks
+rm -f "$0"  # 删除脚本自身
+
+exit 0
+EOF
           
-          # 目标目录
-          local target_dir_base="/usr/lib/lua/luci/i18n/"
+          # 设置脚本权限
+          chmod +x ./wrt/files/etc/uci-defaults/99-install-langpacks
           
-          # 复制语言包
-          local apps=("linkease" "quickstart" "unishare")
-          
-          echo "找到的根文件系统目录:"
-          echo "$rootfs_dirs"
-          
-          while IFS= read -r rootfs_dir; do
-            # 确定最终目标目录
-            local target_dir="${rootfs_dir}${target_dir_base}"
-            
-            # 检查这是否是有效的rootfs目录
-            if [ ! -d "$rootfs_dir/usr" ]; then
-              echo "跳过无效目录: $rootfs_dir (缺少/usr目录)"
-              continue
-            fi
-            
-            mkdir -p "$target_dir"
-            echo "使用根文件系统: $rootfs_dir"
-            
-            for app in "${apps[@]}"; do
-              local source_file="$GITHUB_WORKSPACE/Scripts/${app}.zh-cn.lmo"
-              
-              if [ -f "$source_file" ]; then
-                cp -fv "$source_file" "$target_dir/${app}.zh-cn.lmo"
-                echo "注入 ${app}.zh-cn.lmo 到 $target_dir"
-              else
-                echo "::warning file=${source_file}::${app} 语言包未找到"
-              fi
-            done
-          done <<< "$rootfs_dirs"
-          
-          # 处理固件tar包
-          echo "重新打包固件..."
-          find ./wrt/bin/targets -name "*.tar" | while read tar_file; do
-            local dir=$(dirname "$tar_file")
-            local base_name=$(basename "$tar_file")
-            
-            echo "处理 $base_name..."
-            
-            # 创建临时目录
-            local temp_dir=$(mktemp -d)
-            
-            # 解压固件
-            tar -xf "$tar_file" -C "$temp_dir"
-            
-            # 查找所有root目录
-            find "$temp_dir" -name "root" -type d | while read device_root; do
-              # 确保语言包目录存在
-              local lng_dir="$device_root${target_dir_base}"
-              mkdir -p "$lng_dir"
-              
-              # 复制语言包到所有设备
-              for app in "${apps[@]}"; do
-                local source_file="$GITHUB_WORKSPACE/Scripts/${app}.zh-cn.lmo"
-                if [ -f "$source_file" ]; then
-                  cp -f "$source_file" "$lng_dir/${app}.zh-cn.lmo"
-                fi
-              done
-            done
-            
-            # 重新打包
-            tar -cf "$tar_file" -C "$temp_dir" .
-            echo "重新打包: $tar_file"
-            
-            # 清理临时目录
-            rm -rf "$temp_dir"
-          done
-          
-          echo "=== 语言包注入完成 ==="
+          echo "语言包安装脚本已准备"
 
 # ========== 以下新增文件整理步骤 ========== #
       - name: Organize Files
