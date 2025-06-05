@@ -196,72 +196,94 @@ jobs:
         run: |
           echo "=== 开始注入语言包 ==="
           
-          # 定义语言包注入函数
-          inject_language_packs() {
-            # 定位固件根文件系统目录
-            local rootfs_dir=$(find ./wrt/bin/targets -type d -name "root-*" -print -quit)
+          # 确保进入工作区根目录
+          cd $GITHUB_WORKSPACE
+          
+          # 定位固件根文件系统目录
+          local rootfs_dirs=$(find ./wrt/bin/targets -type d -name "root" -print)
+          if [ -z "$rootfs_dirs" ]; then
+            # 如果找不到root目录，尝试查找解压后的rootfs
+            rootfs_dirs=$(find ./wrt/bin/targets -type d -path "*/packages/*/base-files" -print)
+          fi
+          
+          if [ -z "$rootfs_dirs" ]; then
+            echo "::error::RootFS directory not found! Language pack injection failed."
+            echo "搜索路径: $(find ./wrt/bin/targets -type d | head -n 10)"
+            exit 1
+          fi
+          
+          # 目标目录
+          local target_dir_base="/usr/lib/lua/luci/i18n/"
+          
+          # 复制语言包
+          local apps=("linkease" "quickstart" "unishare")
+          
+          echo "找到的根文件系统目录:"
+          echo "$rootfs_dirs"
+          
+          while IFS= read -r rootfs_dir; do
+            # 确定最终目标目录
+            local target_dir="${rootfs_dir}${target_dir_base}"
             
-            if [ -z "$rootfs_dir" ]; then
-              echo "::error::RootFS directory not found! Language pack injection failed."
-              return 1
+            # 检查这是否是有效的rootfs目录
+            if [ ! -d "$rootfs_dir/usr" ]; then
+              echo "跳过无效目录: $rootfs_dir (缺少/usr目录)"
+              continue
             fi
             
-            # 目标目录
-            local target_dir="$rootfs_dir/usr/lib/lua/luci/i18n/"
             mkdir -p "$target_dir"
-            echo "Located rootfs: $rootfs_dir"
+            echo "使用根文件系统: $rootfs_dir"
             
-            # 复制语言包
-            local apps=("linkease" "quickstart" "unishare")
             for app in "${apps[@]}"; do
               local source_file="$GITHUB_WORKSPACE/Scripts/${app}.zh-cn.lmo"
               
               if [ -f "$source_file" ]; then
-                cp -f "$source_file" "$target_dir/${app}.zh-cn.lmo"
-                echo "Injected ${app}.zh-cn.lmo to $target_dir"
+                cp -fv "$source_file" "$target_dir/${app}.zh-cn.lmo"
+                echo "注入 ${app}.zh-cn.lmo 到 $target_dir"
               else
-                echo "::warning file=${source_file}::Language pack not found for ${app}"
+                echo "::warning file=${source_file}::${app} 语言包未找到"
               fi
             done
+          done <<< "$rootfs_dirs"
+          
+          # 处理固件tar包
+          echo "重新打包固件..."
+          find ./wrt/bin/targets -name "*.tar" | while read tar_file; do
+            local dir=$(dirname "$tar_file")
+            local base_name=$(basename "$tar_file")
             
-            # 重新生成固件包
-            echo "Repacking firmware images..."
-            find ./wrt/bin/targets -name "*.tar" | while read tar_file; do
-              local dir=$(dirname "$tar_file")
-              local base_name=$(basename "$tar_file")
+            echo "处理 $base_name..."
+            
+            # 创建临时目录
+            local temp_dir=$(mktemp -d)
+            
+            # 解压固件
+            tar -xf "$tar_file" -C "$temp_dir"
+            
+            # 查找所有root目录
+            find "$temp_dir" -name "root" -type d | while read device_root; do
+              # 确保语言包目录存在
+              local lng_dir="$device_root${target_dir_base}"
+              mkdir -p "$lng_dir"
               
-              echo "Processing $base_name..."
-              
-              # 创建临时目录
-              local temp_dir=$(mktemp -d)
-              
-              # 解压固件
-              tar -xf "$tar_file" -C "$temp_dir"
-              
-              # 查找所有 rootfs 目录
-              find "$temp_dir" -name "root" -type d | while read device_root; do
-                # 创建语言包目录
-                local lng_dir="$device_root/usr/lib/lua/luci/i18n/"
-                mkdir -p "$lng_dir"
-                
-                # 复制语言包
-                cp -f $target_dir/*.lmo "$lng_dir"
-                echo "Copied language packs to $lng_dir"
+              # 复制语言包到所有设备
+              for app in "${apps[@]}"; do
+                local source_file="$GITHUB_WORKSPACE/Scripts/${app}.zh-cn.lmo"
+                if [ -f "$source_file" ]; then
+                  cp -f "$source_file" "$lng_dir/${app}.zh-cn.lmo"
+                fi
               done
-              
-              # 重新打包
-              tar -cf "$tar_file" -C "$temp_dir" .
-              echo "Repacked: $tar_file"
-              
-              # 清理临时目录
-              rm -rf "$temp_dir"
             done
             
-            echo "=== 语言包注入完成 ==="
-          }
+            # 重新打包
+            tar -cf "$tar_file" -C "$temp_dir" .
+            echo "重新打包: $tar_file"
+            
+            # 清理临时目录
+            rm -rf "$temp_dir"
+          done
           
-          # 执行注入
-          inject_language_packs
+          echo "=== 语言包注入完成 ==="
 
 # ========== 以下新增文件整理步骤 ========== #
       - name: Organize Files
