@@ -108,45 +108,26 @@ jobs:
           fi
       
       # ========== 语言包处理 - 在编译前添加 ========== #
-      - name: Prepare First-Boot Language Pack Installer
+      
+      - name: Prepare Language Pack Installer
         run: |
-          echo "=== 准备首次启动语言包安装脚本 ==="
-          
-          # 创建临时存储目录
           mkdir -p ./wrt/files/tmp/langpacks
+          mkdir -p ./wrt/files/etc/uci-defaults
           
-          # 复制语言包到临时目录
-          cp -f $GITHUB_WORKSPACE/Scripts/linkease.zh-cn.lmo ./wrt/files/tmp/langpacks/
-          cp -f $GITHUB_WORKSPACE/Scripts/quickstart.zh-cn.lmo ./wrt/files/tmp/langpacks/
-          cp -f $GITHUB_WORKSPACE/Scripts/unishare.zh-cn.lmo ./wrt/files/tmp/langpacks/
+          cp $GITHUB_WORKSPACE/Scripts/linkease.zh-cn.lmo ./wrt/files/tmp/langpacks/
+          cp $GITHUB_WORKSPACE/Scripts/quickstart.zh-cn.lmo ./wrt/files/tmp/langpacks/
+          cp $GITHUB_WORKSPACE/Scripts/unishare.zh-cn.lmo ./wrt/files/tmp/langpacks/
           
-          # 创建自毁脚本
-          cat << 'SCRIPT_CONTENT' > ./wrt/files/etc/uci-defaults/99-install-langpacks
-#!/bin/sh
-
-echo "正在安装语言包..."
-mkdir -p /usr/lib/lua/luci/i18n/
-cp /tmp/langpacks/*.lmo /usr/lib/lua/luci/i18n/
-
-# 验证安装
-if ls /usr/lib/lua/luci/i18n/*.lmo >/dev/null 2>&1; then
-    echo "语言包安装成功"
-else
-    echo "语言包安装失败!" >&2
-fi
-
-# 清理痕迹
-echo "清理临时文件..."
-rm -rf /tmp/langpacks
-rm -f "$0"  # 删除脚本自身
-
-exit 0
-SCRIPT_CONTENT
+          # 使用最简单的单行写法避免多行问题
+          echo '#!/bin/sh' > ./wrt/files/etc/uci-defaults/99-install-langpacks
+          echo 'echo "Installing language packs..."' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
+          echo 'mkdir -p /usr/lib/lua/luci/i18n/' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
+          echo 'cp /tmp/langpacks/*.lmo /usr/lib/lua/luci/i18n/' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
+          echo 'rm -rf /tmp/langpacks' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
+          echo 'rm -f "$0"' >> ./wrt/files/etc/uci-defaults/99-install-langpacks
           
-          # 设置脚本权限
           chmod +x ./wrt/files/etc/uci-defaults/99-install-langpacks
-          
-          echo "语言包安装脚本已准备"
+          echo "Language pack installer created successfully"
       
       # ========== 原有编译步骤 ========== #
 
