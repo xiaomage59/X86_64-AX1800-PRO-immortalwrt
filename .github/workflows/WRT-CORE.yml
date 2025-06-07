@@ -217,31 +217,31 @@ jobs:
 
           make -j$(nproc) || make -j$(nproc) V=s
 
-# ========== 以下新增文件整理步骤 ========== #
-      - name: Organize Files
-        if: env.WRT_TEST != 'true'
-        run: |
-          # 进入固件输出目录（使用绝对路径确保可靠性）
-          cd $GITHUB_WORKSPACE/wrt/bin/targets/*/*
-          cat sha256sums
+# ========== 以下新增文件整理步骤 (启用取消2个“##”)========== #
+      ##- name: Organize Files
+        ##if: env.WRT_TEST != 'true'
+        ##run: |
+          ### 进入固件输出目录（使用绝对路径确保可靠性）
+          ##cd $GITHUB_WORKSPACE/wrt/bin/targets/*/*
+          ##cat sha256sums
           
           # 使用绝对路径复制配置文件
-          cp $GITHUB_WORKSPACE/wrt/.config build.config
+          ##cp $GITHUB_WORKSPACE/wrt/.config build.config
           
-          # 创建包目录并收集IPK文件
-          mkdir -p packages
-          if [ -d "$GITHUB_WORKSPACE/wrt/bin/packages" ]; then
-            find $GITHUB_WORKSPACE/wrt/bin/packages -name "*.ipk" -exec mv -f {} packages/ \;
-          else
-            echo "Warning: No packages directory found at $GITHUB_WORKSPACE/wrt/bin/packages"
-          fi
+          ### 创建包目录并收集IPK文件
+          ##mkdir -p packages
+          ##if [ -d "$GITHUB_WORKSPACE/wrt/bin/packages" ]; then
+            ##find $GITHUB_WORKSPACE/wrt/bin/packages -name "*.ipk" -exec mv -f {} packages/ \;
+          ##else
+            ##echo "Warning: No packages directory found at $GITHUB_WORKSPACE/wrt/bin/packages"
+          ##fi
           
-          # 打包并清理
-          tar -zcf Packages.tar.gz packages
-          rm -rf packages feeds.buildinfo version.buildinfo
+          ### 打包并清理
+          ##tar -zcf Packages.tar.gz packages
+          ##rm -rf packages feeds.buildinfo version.buildinfo
           
-          # 设置环境变量（使用绝对路径）
-          echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
+          ### 设置环境变量（使用绝对路径）
+          ##echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
 # ========== 以上新增文件整理步骤 ========== #
 
       - name: Machine Information
