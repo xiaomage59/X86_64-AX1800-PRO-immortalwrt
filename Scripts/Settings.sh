@@ -47,12 +47,16 @@ fi
 #高通平台调整
 DTS_PATH="./target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/"
 if [[ "${WRT_TARGET^^}" == *"QUALCOMMAX"* ]]; then
-	#取消nss相关feed
-	echo "CONFIG_FEED_nss_packages=n" >> ./.config
-	echo "CONFIG_FEED_sqm_scripts_nss=n" >> ./.config
 	#开启sqm-nss插件
 	echo "CONFIG_PACKAGE_luci-app-sqm=y" >> ./.config
 	echo "CONFIG_PACKAGE_sqm-scripts-nss=y" >> ./.config
+ 	#设置NSS版本
+	echo "CONFIG_NSS_FIRMWARE_VERSION_11_4=n" >> ./.config
+	if [[ "${WRT_CONFIG,,}" == *"ipq50"* ]]; then
+		echo "CONFIG_NSS_FIRMWARE_VERSION_12_2=y" >> ./.config
+	else
+		echo "CONFIG_NSS_FIRMWARE_VERSION_12_5=y" >> ./.config
+	fi
  	#设置NSS版本
 	echo "CONFIG_NSS_FIRMWARE_VERSION_11_4=n" >> ./.config
 	if [[ "${WRT_CONFIG,,}" == *"ipq50"* ]]; then
