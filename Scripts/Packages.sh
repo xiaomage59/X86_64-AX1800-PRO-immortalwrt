@@ -164,10 +164,11 @@ UPDATE_PACKAGE "luci-app-navidrome" "tty228/luci-app-navidrome" "main"
 UPDATE_PACKAGE "luci-app-socat" "WROIATE/luci-app-socat" "main"
 
 #timecontrol 上网时间控制插件
-UPDATE_PACKAGE "luci-app-timecontrol" "sirpdboy/luci-app-timecontrol" "main"
+#UPDATE_PACKAGE "luci-app-timecontrol" "sirpdboy/luci-app-timecontrol" "main"
+UPDATE_PACKAGE "luci-app-timecontrol" "gaobin89/luci-app-timecontrol" "main"
 
 #luci-app-taskplan 任务设置2.0版
-UPDATE_PACKAGE "luci-app-taskplan" "sirpdboy/luci-app-taskplan" "master"
+#UPDATE_PACKAGE "luci-app-taskplan" "sirpdboy/luci-app-taskplan" "master"
 
 #------------------以上自定义源--------------------#
 
