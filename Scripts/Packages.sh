@@ -165,7 +165,8 @@ UPDATE_PACKAGE "luci-app-socat" "WROIATE/luci-app-socat" "main"
 
 #timecontrol 上网时间控制插件
 #UPDATE_PACKAGE "luci-app-timecontrol" "sirpdboy/luci-app-timecontrol" "main"
-UPDATE_PACKAGE "luci-app-timecontrol" "gaobin89/luci-app-timecontrol" "main"
+#timecontrol 上网时间控制插件 -- 自适应FW3/FW4防火墙，支持IPv4/IPv6。改自Lienol原版luci-app-timecontrol FW3版本
+UPDATE_PACKAGE "luci-app-timecontrol" "gaobin89/luci-app-timecontrol" "main" 
 
 #luci-app-taskplan 任务设置2.0版
 UPDATE_PACKAGE "luci-app-taskplan" "sirpdboy/luci-app-taskplan" "master"
