@@ -86,7 +86,9 @@ CONFIG_PACKAGE_luci-proto-bonding=y
 CONFIG_PACKAGE_luci-proto-relay=y
 CONFIG_PACKAGE_mmc-utils=y
 CONFIG_PACKAGE_nand-utils=y
+CONFIG_PACKAGE_openssh-keygen=y
 CONFIG_PACKAGE_openssh-sftp-server=y
+CONFIG_PACKAGE_openssl-util=y
 CONFIG_PACKAGE_sfdisk=y
 CONFIG_PACKAGE_sgdisk=y
 #CONFIG_PACKAGE_usbmuxd=y  #若连接了 iOS 设备，usbmuxd 负责管理通信，而 usbutils 可用于验证设备是否被识别
@@ -139,7 +141,7 @@ CONFIG_PACKAGE_luci-app-partexp=y
 #主题界面edge
 CONFIG_PACKAGE_luci-theme-edge=y
 #文件浏览器filebrowser-go
-#CONFIG_PACKAGE_luci-app-filebrowser-go=y
+CONFIG_PACKAGE_luci-app-filebrowser-go=y
 #多端网盘挂载alist
 #CONFIG_PACKAGE_luci-app-alist=y
 CONFIG_PACKAGE_luci-app-openlist=y
