@@ -182,6 +182,23 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
+#-------------------------以下2025.07.05---添加补丁--------------------------------#
+      - name: Patch rstrip.sh
+        run: |
+          chmod +x $GITHUB_WORKSPACE/Scripts/patch_rstrip.sh
+          bash $GITHUB_WORKSPACE/Scripts/patch_rstrip.sh
+
+      - name: Check rstrip.sh patch
+        run: |
+          grep 'Skipping strip for \$1' ./wrt/scripts/rstrip.sh && echo "补丁已生效"
+          head -20 ./wrt/scripts/rstrip.sh
+
+      - name: Remove -Werror
+        run: |
+          chmod +x $GITHUB_WORKSPACE/Scripts/remove_werror.sh
+          bash $GITHUB_WORKSPACE/Scripts/remove_werror.sh
+#-------------------------以上2025.07.05---添加补丁--------------------------------#
+
       - name: Custom Packages
         run: |
           cd ./wrt/package/
