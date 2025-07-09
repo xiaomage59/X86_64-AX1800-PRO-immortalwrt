@@ -99,7 +99,7 @@ jobs:
           cd ./wrt/ && echo "WRT_HASH=$(git log -1 --pretty=format:'%h')" >> $GITHUB_ENV
 
           # ---------修改软件源为IPK（新增部分）-------#
-          sed -i 's/.apk/.ipk/g' feeds.conf.default
+          #sed -i 's/.apk/.ipk/g' feeds.conf.default
 
           # GitHub Action 移除国内下载源
           PROJECT_MIRRORS_FILE="./scripts/projectsmirrors.json"
@@ -183,20 +183,20 @@ jobs:
           ./scripts/feeds install -a
 
 #-------------------------以下2025.07.05---添加补丁--------------------------------#
-      - name: Patch rstrip.sh
-        run: |
-          chmod +x $GITHUB_WORKSPACE/Scripts/patch_rstrip.sh
-          bash $GITHUB_WORKSPACE/Scripts/patch_rstrip.sh
+      ##- name: Patch rstrip.sh
+        ##run: |
+          ##chmod +x $GITHUB_WORKSPACE/Scripts/patch_rstrip.sh
+          ##bash $GITHUB_WORKSPACE/Scripts/patch_rstrip.sh
 
-      - name: Check rstrip.sh patch
-        run: |
-          grep 'Skipping strip for \$1' ./wrt/scripts/rstrip.sh && echo "补丁已生效"
-          head -20 ./wrt/scripts/rstrip.sh
+      ##- name: Check rstrip.sh patch
+        ##run: |
+          ##grep 'Skipping strip for \$1' ./wrt/scripts/rstrip.sh && echo "补丁已生效"
+          ##head -20 ./wrt/scripts/rstrip.sh
 
-      - name: Remove -Werror
-        run: |
-          chmod +x $GITHUB_WORKSPACE/Scripts/remove_werror.sh
-          bash $GITHUB_WORKSPACE/Scripts/remove_werror.sh
+      ##- name: Remove -Werror
+        ##run: |
+          ##chmod +x $GITHUB_WORKSPACE/Scripts/remove_werror.sh
+          ##bash $GITHUB_WORKSPACE/Scripts/remove_werror.sh
 #-------------------------以上2025.07.05---添加补丁--------------------------------#
 
       - name: Custom Packages
