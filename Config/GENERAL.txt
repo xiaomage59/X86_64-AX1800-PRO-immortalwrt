@@ -107,7 +107,7 @@ CONFIG_PACKAGE_libfuse3-3=y
 CONFIG_PACKAGE_luci-app-ddns=y
 CONFIG_PACKAGE_luci-app-ddns-go=y
 #微力同步
-#CONFIG_PACKAGE_luci-app-verysync=y
+CONFIG_PACKAGE_luci-app-verysync=y
 #补全linux系统管理指令
 CONFIG_PACKAGE_sudo=y
 #DDNS依赖
@@ -154,7 +154,7 @@ CONFIG_PACKAGE_luci-app-wifischedule=y
 #阿里云盘webdav
 #CONFIG_PACKAGE_luci-app-aliyundrive-webdav=y
 #docker
-#CONFIG_PACKAGE_luci-app-dockerman=y
+CONFIG_PACKAGE_luci-app-dockerman=y
 #KMS服务器
 CONFIG_PACKAGE_luci-app-vlmcsd=y
 #ZeroTier内网穿透
@@ -173,7 +173,7 @@ CONFIG_PACKAGE_luci-app-argon-config=y
 CONFIG_PACKAGE_socat=y
 CONFIG_PACKAGE_luci-app-socat=y
 #磁盘管理-diskman
-#CONFIG_PACKAGE_luci-app-diskman=y
+CONFIG_PACKAGE_luci-app-diskman=y
 #timecontrol 上网时间控制插件 - 自适应FW3/FW4防火墙，支持IPv4/IPv6。改自Lienol原版luci-app-timecontrol FW3版本
 CONFIG_PACKAGE_luci-app-timecontrol=y
 #timecontrol 上网时间控制插件 - 上网时间控制NFT版2.0.2版==专门针对24.10分支，适配NFT的上网时间控制插件。
@@ -239,6 +239,6 @@ CONFIG_PACKAGE_unishare=y
 CONFIG_PACKAGE_luci-app-unishare=y
 #CONFIG_PACKAGE_luci-i18n-unishare-zh-cn=y
 #补充依赖
-CONFIG_PACKAGE_python3-netifaces=y
+#CONFIG_PACKAGE_python3-netifaces=y
 
 #-------------------2025.04.12-测试-----------------#
