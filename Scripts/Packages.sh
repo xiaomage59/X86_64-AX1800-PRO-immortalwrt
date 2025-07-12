@@ -192,7 +192,16 @@ UPDATE_PACKAGE "luci-app-quickstart" "shidahuilang/openwrt-package" "Immortalwrt
 #UPDATE_PACKAGE "quickstart" "master-yun-yun/package-istore" "Immortalwrt" "pkg"
 #UPDATE_PACKAGE "luci-app-quickstart" "master-yun-yun/package-istore" "Immortalwrt" "pkg"
 
-UPDATE_PACKAGE "luci-app-store" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
+#UPDATE_PACKAGE "luci-app-store" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
+
+#---------------------------2025.07.12----------------------#
+#git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
+UPDATE_PACKAGE "app-store-ui" "linkease/istore-ui" "main" "pkg"
+#git_sparse_clone main https://github.com/linkease/istore luci
+UPDATE_PACKAGE "luci" "linkease/istore" "main" "pkg"
+UPDATE_PACKAGE "istore" "linkease/istore" "main" "pkg"
+UPDATE_PACKAGE "luci-app-store" "linkease/istore" "main" "pkg"
+#---------------------------2025.07.12----------------------#
 
 UPDATE_PACKAGE "webdav2" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
 UPDATE_PACKAGE "unishare" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
