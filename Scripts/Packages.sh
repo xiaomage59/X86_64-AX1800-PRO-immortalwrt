@@ -129,7 +129,7 @@ UPDATE_VERSION() {
 UPDATE_VERSION "sing-box"
 UPDATE_VERSION "tailscale"
 
-#------------------以下自定义源--------------------#
+#---------------------------------以下自定义源-------------------------------------#
 
 #全能推送PushBot----OK
 UPDATE_PACKAGE "luci-app-pushbot" "zzsj0928/luci-app-pushbot" "master"
@@ -174,8 +174,7 @@ UPDATE_PACKAGE "luci-app-timecontrol" "gaobin89/luci-app-timecontrol" "main"
 #luci-app-taskplan 任务设置2.0版
 UPDATE_PACKAGE "luci-app-taskplan" "sirpdboy/luci-app-taskplan" "master"
 
-#------------------以上自定义源--------------------#
-
+#---------------------------------以下自定义源-------------------------------------#
 
 #-------------------2025.04.12-测试-----------------#
 #UPDATE_PACKAGE "luci-app-clouddrive2" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
@@ -192,7 +191,7 @@ UPDATE_PACKAGE "luci-app-quickstart" "shidahuilang/openwrt-package" "Immortalwrt
 #UPDATE_PACKAGE "quickstart" "master-yun-yun/package-istore" "Immortalwrt" "pkg"
 #UPDATE_PACKAGE "luci-app-quickstart" "master-yun-yun/package-istore" "Immortalwrt" "pkg"
 
-#UPDATE_PACKAGE "luci-app-store" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
+UPDATE_PACKAGE "luci-app-store" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
 
 #---------------------------2025.07.12----------------------#
 #git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
@@ -200,8 +199,8 @@ UPDATE_PACKAGE "luci-app-quickstart" "shidahuilang/openwrt-package" "Immortalwrt
 #git_sparse_clone main https://github.com/linkease/istore luci
 #UPDATE_PACKAGE "luci" "linkease/istore" "main" "pkg"
 
-UPDATE_PACKAGE "istore" "linkease/istore" "main" "pkg"
-UPDATE_PACKAGE "luci-app-store" "linkease/istore" "main" "pkg"
+#UPDATE_PACKAGE "istore" "linkease/istore" "main" "pkg"
+#UPDATE_PACKAGE "luci-app-store" "linkease/istore" "main" "pkg"
 #---------------------------2025.07.12----------------------#
 
 UPDATE_PACKAGE "webdav2" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
