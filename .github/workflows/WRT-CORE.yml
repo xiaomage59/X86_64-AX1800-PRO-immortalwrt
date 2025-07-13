@@ -208,12 +208,12 @@ jobs:
           $GITHUB_WORKSPACE/Scripts/Packages.sh
           $GITHUB_WORKSPACE/Scripts/Handles.sh
 
-#-------------------------以下2025.07.13---添加istore补丁--------------------------#
-      - name: Patch luci-app-store Makefile version
-        run: |
-          chmod +x $GITHUB_WORKSPACE/Scripts/patch_luci_app_store.sh
-          $GITHUB_WORKSPACE/Scripts/patch_luci_app_store.sh ./wrt/
-#-------------------------以上2025.07.13---添加istore补丁--------------------------#
+#-------------------------以下2025.07.13---添加istore补丁--双“##”------------------------#
+      ##- name: Patch luci-app-store Makefile version
+        ##run: |
+          ##chmod +x $GITHUB_WORKSPACE/Scripts/patch_luci_app_store.sh
+          ##$GITHUB_WORKSPACE/Scripts/patch_luci_app_store.sh ./wrt/
+#-------------------------以上2025.07.13---添加istore补丁--双“##”------------------------#
 
       - name: Custom Settings
         run: |
