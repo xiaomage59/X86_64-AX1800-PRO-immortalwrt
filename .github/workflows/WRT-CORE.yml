@@ -209,10 +209,10 @@ jobs:
           $GITHUB_WORKSPACE/Scripts/Handles.sh
 
 #-------------------------以下2025.07.13---添加istore补丁--双“##”------------------------#
-      ##- name: Patch all Makefiles version format -- 修复makefiles版本格式
-        ##run: |
-          ##chmod +x $GITHUB_WORKSPACE/Scripts/patch_makefiles.sh
-          ##$GITHUB_WORKSPACE/Scripts/patch_makefiles.sh ./wrt/
+      - name: Patch all Makefiles version format -- 修复makefiles版本格式
+        run: |
+          chmod +x $GITHUB_WORKSPACE/Scripts/patch_makefiles.sh
+          $GITHUB_WORKSPACE/Scripts/patch_makefiles.sh ./wrt/
 #-------------------------以上2025.07.13---添加istore补丁--双“##”------------------------#
 
 #-------------------------以下2025.07.13---不再由 luci-app-openvpn-server 或 luci-app-socat 覆盖主程序包的 config，解决冲突------------------------#
