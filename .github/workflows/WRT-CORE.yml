@@ -219,7 +219,7 @@ jobs:
       - name: Patch config file overwrite conflicts
         run: |
           chmod +x $GITHUB_WORKSPACE/Scripts/patch_conflicts.sh
-          cd ./wrt/package
+          cd ./wrt
           $GITHUB_WORKSPACE/Scripts/patch_conflicts.sh
 #-------------------------以上2025.07.13---不再由 luci-app-openvpn-server 或 luci-app-socat 覆盖主程序包的 config，解决冲突------------------------#
 
