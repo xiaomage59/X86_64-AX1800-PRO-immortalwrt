@@ -218,13 +218,13 @@ UPDATE_PACKAGE "luci-app-quickstart" "shidahuilang/openwrt-package" "Immortalwrt
 
 UPDATE_PACKAGE "luci-app-store" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
 # 以下PATCH: 修正 luci-app-store Makefile-----------2025.07.13------------------------------------------#
-LCS_MK=$(find ./luci-app-store -type f -name Makefile | head -n 1)
-if [ -f "$LCS_MK" ]; then
-    echo "Patching luci-app-store Makefile: $LCS_MK"
-    sed -i -E 's/^(PKG_VERSION:=)([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)$/\1\2\nPKG_RELEASE:=\3/' "$LCS_MK"
-else
-    echo "luci-app-store Makefile not found for patch!"
-fi
+#LCS_MK=$(find ./luci-app-store -type f -name Makefile | head -n 1)
+#if [ -f "$LCS_MK" ]; then
+    #echo "Patching luci-app-store Makefile: $LCS_MK"
+    #sed -i -E 's/^(PKG_VERSION:=)([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)$/\1\2\nPKG_RELEASE:=\3/' "$LCS_MK"
+#else
+    #echo "luci-app-store Makefile not found for patch!"
+#fi
 # 以上PATCH: 修正 luci-app-store Makefile-----------2025.07.13------------------------------------------#
 
 #---------------------------2025.07.12----------------------#
