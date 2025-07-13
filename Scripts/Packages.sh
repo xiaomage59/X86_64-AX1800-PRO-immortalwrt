@@ -179,8 +179,8 @@ UPDATE_PACKAGE "luci-app-taskplan" "sirpdboy/luci-app-taskplan" "master"
 #-------------------2025.04.12-测试-----------------#
 #UPDATE_PACKAGE "luci-app-clouddrive2" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
 
-UPDATE_PACKAGE "istoreenhance" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
-UPDATE_PACKAGE "luci-app-istoreenhance" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
+UPDATE_PACKAGE "ienhance" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
+UPDATE_PACKAGE "luci-app-ienhance" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
 
 UPDATE_PACKAGE "linkmount" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
 UPDATE_PACKAGE "linkease" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
@@ -188,10 +188,19 @@ UPDATE_PACKAGE "luci-app-linkease" "shidahuilang/openwrt-package" "Immortalwrt" 
 
 UPDATE_PACKAGE "quickstart" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
 UPDATE_PACKAGE "luci-app-quickstart" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
-#UPDATE_PACKAGE "quickstart" "master-yun-yun/package-istore" "Immortalwrt" "pkg"
-#UPDATE_PACKAGE "luci-app-quickstart" "master-yun-yun/package-istore" "Immortalwrt" "pkg"
+#UPDATE_PACKAGE "quickstart" "master-yun-yun/package-i" "Immortalwrt" "pkg"
+#UPDATE_PACKAGE "luci-app-quickstart" "master-yun-yun/package-i" "Immortalwrt" "pkg"
 
 UPDATE_PACKAGE "luci-app-store" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
+# 以下PATCH: 修正 luci-app-store Makefile-----------2025.07.13------------------------------------------#
+LCS_MK=$(find ./luci-app-store -type f -name Makefile | head -n 1)
+if [ -f "$LCS_MK" ]; then
+    echo "Patching luci-app-store Makefile: $LCS_MK"
+    sed -i -E 's/^(PKG_VERSION:=)([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)$/\1\2\nPKG_RELEASE:=\3/' "$LCS_MK"
+else
+    echo "luci-app-store Makefile not found for patch!"
+fi
+# 以上PATCH: 修正 luci-app-store Makefile-----------2025.07.13------------------------------------------#
 
 #---------------------------2025.07.12----------------------#
 #git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
