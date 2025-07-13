@@ -3,25 +3,25 @@
 #----------------------------2025.07.13------以下新增istore相关------------------------#
 
 # 在脚本开头添加所有必要的软件源
-echo "Adding software feeds to feeds.conf.default"
+##echo "Adding software feeds to feeds.conf.default"
 
 # 检查并添加iStore软件源
-echo >> ../feeds.conf.default
-echo 'src-git istore https://github.com/linkease/istore;main' >> ../feeds.conf.default
+##echo >> ../feeds.conf.default
+##echo 'src-git istore https://github.com/linkease/istore;main' >> ../feeds.conf.default
 
 # 添加NAS软件源
-echo >> ../feeds.conf.default
-echo 'src-git nas https://github.com/linkease/nas-packages.git;master' >> ../feeds.conf.default
-echo >> ../feeds.conf.default
-echo 'src-git nas_luci https://github.com/linkease/nas-packages-luci.git;main' >> ../feeds.conf.default
+##echo >> ../feeds.conf.default
+##echo 'src-git nas https://github.com/linkease/nas-packages.git;master' >> ../feeds.conf.default
+##echo >> ../feeds.conf.default
+##echo 'src-git nas_luci https://github.com/linkease/nas-packages-luci.git;main' >> ../feeds.conf.default
 
 # 更新并安装所有添加的软件源
-echo "Updating and installing feeds"
-../scripts/feeds update istore nas nas_luci
-../scripts/feeds install -d y -p istore luci-app-store
-../scripts/feeds install -a -p nas
-../scripts/feeds install -a -p nas_luci
-echo "All feeds added and installed successfully"
+##echo "Updating and installing feeds"
+##../scripts/feeds update istore nas nas_luci
+##../scripts/feeds install -d y -p istore luci-app-store
+##../scripts/feeds install -a -p nas
+##../scripts/feeds install -a -p nas_luci
+##echo "All feeds added and installed successfully"
 
 #----------------------------2025.07.13------以上新增istore相关------------------------#
 
