@@ -1,36 +1,53 @@
 #!/bin/sh
 
-# 注释Makefile里的安装命令，并递归删除files目录下所有openvpn/socat config
-for PKGNAME in luci-app-openvpn-server luci-app-openvpn; do
-  find . -type f -path "*/$PKGNAME/Makefile" | while read MK; do
-    echo "Patching $MK"
-    sed -i '/INSTALL_CONF.*openvpn.config.*etc\/config\/openvpn/s/^/#/' "$MK"
+# 修复OpenVPN相关冲突
+find . -type f -path "*/luci-app-openvpn*/Makefile" | while read MK; do
+    echo "彻底修复: $MK"
     PKGDIR=$(dirname "$MK")
-    # 递归删除所有与openvpn相关的config
-    find "$PKGDIR/files" -type f \( -name "openvpn.config" -o -name "openvpn" \) 2>/dev/null | while read CFG; do
-      echo "Removing $CFG"
-      rm -f "$CFG"
-    done
-    # 删除files/etc/config/openvpn（如果有）
-    if [ -f "$PKGDIR/files/etc/config/openvpn" ]; then
-      echo "Removing $PKGDIR/files/etc/config/openvpn"
-      rm -f "$PKGDIR/files/etc/config/openvpn"
-    fi
-  done
+    
+    # 1. 注释所有可能安装冲突配置的Makefile命令（扩展匹配模式）
+    sed -i -e '/INSTALL_CONF.*\/etc\/config\/openvpn/s/^/# /' \
+           -e '/INSTALL_DATA.*\/etc\/config\/openvpn/s/^/# /' \
+           -e '/cp.*\/etc\/config\/openvpn/s/^/# /' \
+           "$MK"
+
+    # 2. 深度清理所有相关配置文件
+    find "$PKGDIR" -type f \( \
+        -name "openvpn.config" \
+        -o -name "openvpn" \
+        -o -path "*/files/etc/config/openvpn" \
+        -o -path "*/files/etc/uci-defaults/*openvpn*" \
+    \) -exec echo "删除: {}" \; -exec rm -f {} \;
 done
 
-find . -type f -path "*/luci-app-socat/Makefile" | while read MK; do
-  echo "Patching $MK"
-  sed -i '/INSTALL_CONF.*socat.config.*etc\/config\/socat/s/^/#/' "$MK"
-  PKGDIR=$(dirname "$MK")
-  # 递归删除所有与socat相关的config
-  find "$PKGDIR/files" -type f \( -name "socat.config" -o -name "socat" \) 2>/dev/null | while read CFG; do
-    echo "Removing $CFG"
-    rm -f "$CFG"
-  done
-  # 删除files/etc/config/socat（如果有）
-  if [ -f "$PKGDIR/files/etc/config/socat" ]; then
-    echo "Removing $PKGDIR/files/etc/config/socat"
-    rm -f "$PKGDIR/files/etc/config/socat"
-  fi
+# 修复Socat相关冲突
+find . -type f -path "*/luci-app-socat*/Makefile" | while read MK; do
+    echo "彻底修复: $MK"
+    PKGDIR=$(dirname "$MK")
+    
+    # 1. 注释所有可能安装冲突配置的Makefile命令
+    sed -i -e '/INSTALL_CONF.*\/etc\/config\/socat/s/^/# /' \
+           -e '/INSTALL_DATA.*\/etc\/config\/socat/s/^/# /' \
+           -e '/cp.*\/etc\/config\/socat/s/^/# /' \
+           "$MK"
+
+    # 2. 深度清理所有相关配置文件
+    find "$PKGDIR" -type f \( \
+        -name "socat.config" \
+        -o -name "socat" \
+        -o -path "*/files/etc/config/socat" \
+        -o -path "*/files/etc/uci-defaults/*socat*" \
+    \) -exec echo "删除: {}" \; -exec rm -f {} \;
 done
+
+# 3. 额外处理可能被遗漏的安装机制
+find . -type f -path "*/luci-app-*/Makefile" -exec grep -q "openvpn\|socat" {} \; -print | while read MK; do
+    echo "检查潜在冲突: $MK"
+    sed -i -e '/INSTALL_.*[\/ ]etc\/config\/openvpn/s/^/# /' \
+           -e '/INSTALL_.*[\/ ]etc\/config\/socat/s/^/# /' \
+           "$MK"
+done
+
+echo "修复完成！请清除编译缓存后重新编译："
+echo "  make clean && make dirclean"
+echo "  make -j$(nproc) V=s"
