@@ -204,8 +204,8 @@ UPDATE_PACKAGE "luci-app-taskplan" "sirpdboy/luci-app-taskplan" "master"
 #-------------------2025.04.12-测试-----------------#
 #UPDATE_PACKAGE "luci-app-clouddrive2" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
 
-UPDATE_PACKAGE "ienhance" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
-UPDATE_PACKAGE "luci-app-ienhance" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
+UPDATE_PACKAGE "istoreenhance" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
+UPDATE_PACKAGE "luci-app-istoreenhance" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
 
 UPDATE_PACKAGE "linkmount" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
 UPDATE_PACKAGE "linkease" "shidahuilang/openwrt-package" "Immortalwrt" "pkg"
