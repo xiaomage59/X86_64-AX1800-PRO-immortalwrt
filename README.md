@@ -1,5 +1,5 @@
 # OpenWrt计划弃用opkg，全面采用apk。这是一个默认使用opkg的固件
-# （又切回Apk了，opkg见另一仓库项目。集成istore商店（但在apk下没什么用）。带Docker。ipk编译失败，切换apk试试。
+# 切回Apk了，opkg见另一仓库项目。集成istore商店（但在apk下没什么用,内置软件源还是IPK）。带Docker。
 # RE-SS-01-亚瑟-wifi、RE-CS-02-雅典娜-wifi。请注意选择你需要的设备固件！
 # 固件已切换到6.12内核。
 # OpenWRT-CI
