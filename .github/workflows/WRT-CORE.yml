@@ -338,11 +338,17 @@ jobs:
             make clean -j$(nproc)
           fi
 
-      - name: Release Firmware
-        uses: softprops/action-gh-release@master
+      - name: Upload firmware to artifacts
+        uses: actions/upload-artifact@v3
         with:
-          tag_name: ${{env.WRT_CONFIG}}-${{env.WRT_INFO}}-${{env.WRT_BRANCH}}-${{env.WRT_DATE}}
-          files: ./wrt/upload/*.*
+          name: firmware
+          path: ./wrt/upload/*
+
+      #- name: Release Firmware
+      #  uses: softprops/action-gh-release@master
+      #  with:
+      #    tag_name: ${{env.WRT_CONFIG}}-${{env.WRT_INFO}}-${{env.WRT_BRANCH}}-${{env.WRT_DATE}}
+      #    files: ./wrt/upload/*.*
           body: |
             这是个平台固件包，内含多个设备！
             RE-SS-01-亚瑟-wifi、RE-CS-02-雅典娜-wifi
