@@ -339,7 +339,7 @@ jobs:
           fi
 
       - name: Upload firmware to artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: firmware
           path: ./wrt/upload/*
